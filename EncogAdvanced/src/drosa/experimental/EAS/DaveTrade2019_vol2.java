@@ -122,6 +122,12 @@ public class DaveTrade2019_vol2 {
 		String[] valuesH21 = strat.get(21).split(" ");String[] valuesH22 = strat.get(22).split(" ");String[] valuesH23 = strat.get(23).split(" ");
 		int dayTrade = 0;
 		int totalDaysTrade = 0;
+		
+		Calendar calFrom = Calendar.getInstance();
+		Calendar calTo = Calendar.getInstance();
+		calFrom.set(y1, m1, 1);
+		calTo.set(y2,m2,31);
+		
 		for (int i=n;i<data.size()-2;i++){
 			q1 = data.get(i-1);
 			q = data.get(i);
@@ -136,12 +142,7 @@ public class DaveTrade2019_vol2 {
 			int dayWeek = cal.get(Calendar.DAY_OF_WEEK);
 			int week = cal.get(Calendar.WEEK_OF_YEAR);
 			 month = cal.get(Calendar.MONTH);
-			if (y>y2) break;
-			
-			if (y<y1 || y>y2) continue;
-			
-			if (y==y1 && m<m1) continue;
-			if (y==y2 && m>m2) continue;
+			 if (cal.compareTo(calFrom)<0 || cal.compareTo(calTo)>0) continue;
 			qLast = q;
 			
 			comm = 20;
@@ -440,7 +441,7 @@ public class DaveTrade2019_vol2 {
 	
 	public static void main(String[] args) {
 		String path0 ="C:\\fxdata\\";
-		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.03.29.csv";
+		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.23.csv";
 						
 		ArrayList<String> paths = new ArrayList<String>();
 		paths.add(pathEURUSD);
@@ -494,8 +495,8 @@ public class DaveTrade2019_vol2 {
 			
 			for (int y1=2004;y1<=2019;y1++){
 				int y2 = y1+0;
-				for (int m1=0;m1<=0;m1++){
-					int m2 = m1+11;
+				for (int m1=0;m1<=8;m1+=1){
+					int m2 = m1+3;
 					DaveTrade2019_vol2.doTest("", data, y1, y2, m1, m2, strat, true, 0.2, 2);
 				}				
 			}

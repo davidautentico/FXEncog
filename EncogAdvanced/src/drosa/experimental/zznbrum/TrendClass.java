@@ -13,8 +13,22 @@ public class TrendClass {
 	int sizeClose=0;
 	double factor = 0;
 	int mode=0;
+	int index3 = 0;
+	int indexC = 0;
 	
 	
+	public int getIndexC() {
+		return indexC;
+	}
+	public void setIndexC(int indexC) {
+		this.indexC = indexC;
+	}
+	public int getIndex3() {
+		return index3;
+	}
+	public void setIndex3(int index3) {
+		this.index3 = index3;
+	}
 	public long getMillisOpen() {
 		return millisOpen;
 	}

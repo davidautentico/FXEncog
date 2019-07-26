@@ -3810,7 +3810,7 @@ public class TestMeanReversion {
 				
 				
 		//String pathEURUSD = path0+"EURUSD_1 Min_Bid_2009.01.01_2019.04.01.csv";
-		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.06.24.csv";
+		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.23.csv";
 		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.04.06.csv";
 			String pathNews = path0+"News.csv";
 			
@@ -3882,7 +3882,7 @@ public class TestMeanReversion {
 								String params =n+" "+nBars;
 								for (int j=0;j<=23;j++) strat3.set(j,"-1");
 								for (int j=h1;j<=h2;j++) strat3.set(j,params);
-								for (double fMinPips=0.27;fMinPips<=0.27;fMinPips+=0.01){
+								for (double fMinPips=0.25;fMinPips<=0.25;fMinPips+=0.01){
 									for (int atrLimit=9900;atrLimit<=9900;atrLimit+=100){
 										for (int timeFrame=5;timeFrame<=5;timeFrame+=5){
 											for (int maxOpenPositions=30;maxOpenPositions<=30;maxOpenPositions+=5){

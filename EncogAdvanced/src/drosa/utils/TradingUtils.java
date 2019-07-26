@@ -3038,6 +3038,7 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 		int mode = 0;
 		int index1 = 0;
 		int index2 = 0;
+		int index3 = 0;
 		int lastDay = -1;
 		ArrayList<TrendClass> trends = new ArrayList<TrendClass>();
 		Calendar cal = Calendar.getInstance();
@@ -3061,11 +3062,13 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 			if (mode==0){
 				if (actualSizeH1>=minSize){
 					index2=i;
+					index3=i;
 					mode=1;
 					
 					//trendsIndex.add(actualSizeH1*1.0/minSize);
 				}else if (actualSizeL1>=minSize){
 					index2=i;
+					index3=i;
 					mode=-1;
 					
 					//trendsIndex.add(-actualSizeL1*1.0/minSize);
@@ -3076,18 +3079,25 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 				if (actualSizeL2>=minSize){
 					//guardar trends
 					int size = data.get(index2).getClose5()-data.get(index1).getClose5();
+					int sizeC = q.getClose5()-data.get(index1).getClose5();
 					//if (h<=9)
 					
 					TrendClass tsize = new TrendClass();					
 					tsize.setSize(size);
+					tsize.setSizeClose(sizeC);
 					tsize.setMillisIndex1(cal1.getTimeInMillis());
-					tsize.setMillisIndex1(cal.getTimeInMillis());
+					tsize.setMillisIndex2(cal.getTimeInMillis());
+					tsize.setIndexC(i);
+					tsize.setIndex3(index3);
+					
 					trends.add(tsize);
 					
 					mode=-1;
 					index1 = index2;
 					index2 = i;
+					index3 = i;
 					QuoteShort.getCalendar(cal1, data.get(index1));
+					
 					
 					//trendsIndex.add((data.get(index2).getClose5()-data.get(index1).getClose5())*1.0/minSize);
 				}else if (q.getClose5()>=data.get(index2).getClose5()){
@@ -3099,18 +3109,23 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 				if (actualSizeH2>=minSize){
 					//guardar trends
 					int size = data.get(index1).getClose5()-data.get(index2).getClose5();
+					int sizeC = data.get(index1).getClose5()-q.getClose5();
 					//if (h<=9)
 					
 					TrendClass tsize = new TrendClass();					
-					tsize.setSize(-size);
+					tsize.setSizeClose(-size);
+					tsize.setSizeClose(sizeC);
 					tsize.setMillisIndex1(cal1.getTimeInMillis());
-					tsize.setMillisIndex1(cal.getTimeInMillis());
+					tsize.setMillisIndex2(cal.getTimeInMillis());
+					tsize.setIndex3(index3);
+					tsize.setIndexC(i);
 					//tsize.getCal().setTimeInMillis(cal1.getTimeInMillis());
 					trends.add(tsize);
 					
 					mode=1;
 					index1 = index2;
 					index2 = i;
+					index3 = i;
 					QuoteShort.getCalendar(cal1, data.get(index1));
 					
 					//trendsIndex.add((data.get(index2).getClose5()-data.get(index1).getClose5())*1.0/minSize);

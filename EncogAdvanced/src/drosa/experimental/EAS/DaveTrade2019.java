@@ -1806,24 +1806,6 @@ public class DaveTrade2019 {
 		int losses = 0;
 		int winPips = 0;
 		int lostPips = 0;
-		ArrayList<Long> yearWinPips = new ArrayList<Long>();
-		ArrayList<Long> yearLostPips = new ArrayList<Long>();
-		int lastYear = -1;
-		for (int i=0;i<=(y2-y1)+1;i++){
-			yearWinPips.add(0L);
-			yearLostPips.add(0L);
-		}
-		ArrayList<Long> mWinPips = new ArrayList<Long>();
-		ArrayList<Long> mLostPips = new ArrayList<Long>();
-		ArrayList<Long> mWinPipsO = new ArrayList<Long>();
-		ArrayList<Long> mLostPipsO = new ArrayList<Long>();
-		int mYear = -1;
-		for (int i=0;i<=(y2-y1)*12+11;i++){
-			mWinPips.add(0L);
-			mLostPips.add(0L);
-			mWinPipsO.add(0L);
-			mLostPipsO.add(0L);
-		}
 		
 		ArrayList<PositionShort> positions = new ArrayList<PositionShort>();
 		int lastDay = -1;
@@ -1871,6 +1853,12 @@ public class DaveTrade2019 {
 		String[] valuesH15 = strat.get(15).split(" ");String[] valuesH16 = strat.get(16).split(" ");String[] valuesH17 = strat.get(17).split(" ");
 		String[] valuesH18 = strat.get(18).split(" ");String[] valuesH19 = strat.get(19).split(" ");String[] valuesH20 = strat.get(20).split(" ");
 		String[] valuesH21 = strat.get(21).split(" ");String[] valuesH22 = strat.get(22).split(" ");String[] valuesH23 = strat.get(23).split(" ");
+		
+		Calendar calFrom = Calendar.getInstance();
+		Calendar calTo = Calendar.getInstance();
+		calFrom.set(y1, m1, 1);
+		calTo.set(y2,m2,31);
+		int lastYear = -1;
 		for (int i=200;i<data.size()-1;i++){
 			q1 = data.get(i-1);
 			q = data.get(i);
@@ -1885,12 +1873,11 @@ public class DaveTrade2019 {
 			int dayWeek = cal.get(Calendar.DAY_OF_WEEK);
 			int week = cal.get(Calendar.WEEK_OF_YEAR);
 			 month = cal.get(Calendar.MONTH);
-			if (y>y2) break;
 			
-			if (y<y1 || y>y2) continue;
-			
-			if (y==y1 && m<m1) continue;
-			if (y==y2 && m>m2) continue;
+			 boolean canTrade = true;
+			if (cal.compareTo(calFrom)<0 || cal.compareTo(calTo)>0){
+				canTrade = false;
+			}
 			
 			if (y!=lastYear){
 				if (lastYear!=-1){
@@ -1929,6 +1916,7 @@ public class DaveTrade2019 {
 			if (h==21) values = valuesH21;if (h==22) values = valuesH22;if (h==23) values = valuesH23;
 			ishOk = values[0] !="-1";
 			if (  true 
+					&& canTrade
 					&& ishOk
 					//&& min>=min1 && min<=min2
 					&& (h>0 || min>=15)
@@ -2092,8 +2080,6 @@ public class DaveTrade2019 {
 			int j = 0;
 			int yr = y-y1;
 			int ymr = yr*12+month;
-			mWinPipsO.set(ymr, 0l);
-			mLostPipsO.set(ymr, 0l);
 			boolean closeAll = false;
 			if (month!=lastCloseMonth){
 				if (lastCloseMonth!=-1){					
@@ -2164,14 +2150,7 @@ public class DaveTrade2019 {
 							winPips += pips;
 							wins++;
 							
-							int yo = y-y1;
-							if (!yWinPips.containsKey(y)) yWinPips.put(y,0);
-							int ya = yWinPips.get(y);
-							yWinPips.put(y, ya+pips);
-							
-							long ma = mWinPips.get(yo*12+month);
-							mWinPips.set(yo*12+month, ma+pips);
-							
+														
 							//actualizamos balance
 							double win$$ = p.getPip$$()*pips*0.1;
 							balance += win$$;
@@ -2182,7 +2161,8 @@ public class DaveTrade2019 {
 							if (debug==1){
 								System.out.println("[WIN] "
 										+" "+DateUtils.datePrint(cal)
-										+" || "+pips+" ["+yo*12+month+"] "+(ma+pips)
+										+" || "+pips
+										//+" ["+yo*12+month+"] "+(ma+pips)
 										+" "+PrintUtils.Print2dec(win$$, false)
 										+" "+PrintUtils.Print2dec(equitity, false)
 										);
@@ -2195,14 +2175,6 @@ public class DaveTrade2019 {
 							lostPips += -pips;
 							losses++;
 							
-							int yo = y-y1;
-							if (!yLostPips.containsKey(y)) yLostPips.put(y,0);
-							int ya = yLostPips.get(y);
-							yLostPips.put(y, ya-pips);
-							
-							long ma = mLostPips.get(yo*12+month);
-							mLostPips.set(yo*12+month, ma-pips);
-							
 							//actualizamos balance
 							double pip$$ = p.getPip$$()*pips*0.1;
 							balance += pip$$;
@@ -2213,7 +2185,9 @@ public class DaveTrade2019 {
 							if (debug==1){
 								System.out.println("[LOST] "
 										+" "+DateUtils.datePrint(cal)
-										+" || "+pips+" ["+yo*12+month+"] "+(ma-pips)
+										+" || "+pips
+										//+" ["+yo*12+month+"] "
+										//+(ma-pips)
 										+" "+PrintUtils.Print2dec(pip$$, false)
 										+" "+PrintUtils.Print2dec(equitity, false)
 										);
@@ -2228,14 +2202,12 @@ public class DaveTrade2019 {
 						if (floatingPips>=0){							
 							int yo = y-y1;
 							
-							long ma = mWinPipsO.get(yo*12+month);
-							mWinPipsO.set(yo*12+month, ma+floatingPips);
-							
 							double pip$$ = p.getPip$$()*floatingPips*0.1;
 							equitity += pip$$;
 							
 							if (debug==2){
-								System.out.println("[WIN floating] "+floatingPips+" ["+yo*12+month+"] "+(ma+floatingPips)
+								System.out.println("[WIN floating] "+floatingPips+" ["+yo*12+month+"] "
+										//+(ma+floatingPips)
 										+" "+PrintUtils.Print2dec(pip$$, false)
 										+" "+PrintUtils.Print2dec(equitity, false)
 										);
@@ -2243,14 +2215,13 @@ public class DaveTrade2019 {
 						}else{
 							int yo = y-y1;
 							
-							long ma = mLostPipsO.get(yo*12+month);
-							mLostPipsO.set(yo*12+month, ma-floatingPips);
+							
 							
 							double pip$$ = p.getPip$$()*floatingPips*0.1;
 							equitity += pip$$;
 							
 							if (debug==2){
-								System.out.println("[LOSS floating] "+floatingPips+" ["+yo*12+month+"] "+(ma-floatingPips)
+								System.out.println("[LOSS floating] "+floatingPips+" ["+yo*12+month+"] "
 										+" "+PrintUtils.Print2dec(pip$$, false)
 										+" "+PrintUtils.Print2dec(equitity, false)
 										);
@@ -2381,8 +2352,8 @@ public class DaveTrade2019 {
 							//long ya = yearWinPips.get(y);
 							//yearWinPips.set(y, ya+pips);
 							
-							long ma = mWinPips.get(yo*12+month);
-							mWinPips.set(yo*12+month, ma+pips);
+							//long ma = mWinPips.get(yo*12+month);
+							//mWinPips.set(yo*12+month, ma+pips);
 							
 							//actualizamos balance
 							double win$$ = p.getPip$$()*pips*0.1;
@@ -2405,8 +2376,8 @@ public class DaveTrade2019 {
 							//long ya = yearLostPips.get(y);
 							//yearLostPips.set(y, ya-pips);
 							
-							long ma = mLostPips.get(yo*12+month);
-							mLostPips.set(yo*12+month, ma-pips);
+							//long ma = mLostPips.get(yo*12+month);
+							//mLostPips.set(yo*12+month, ma-pips);
 							
 							//actualizamos balance
 							double pip$$ = p.getPip$$()*pips*0.1;
@@ -3368,7 +3339,7 @@ public class DaveTrade2019 {
 		
 		String path0 ="C:\\fxdata\\";
 		
-		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.06.24.csv";
+		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.23.csv";
 		
 		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2009.01.01_2018.12.12.csv";
 		
@@ -3511,20 +3482,20 @@ public class DaveTrade2019 {
 				for (double fTp=5.0;fTp<=5.0;fTp+=0.10){
 					for (double fSl=0.5;fSl<=0.5;fSl+=0.1){
 						for (int bbars=22;bbars<=22;bbars+=1){
-							for (double per=40.0;per<=100.0;per+=1.0){
+							for (double per=40.0;per<=40.0;per+=1.0){
 								//String str = "0.4 0.80 "+bbars+" "+PrintUtils.Print2dec(per,false);
-								for (int j=0;j<=23;j++) strat.set(j,"-1");
+								//for (int j=0;j<=23;j++) strat.set(j,"-1");
 								String str = PrintUtils.Print2dec(fTp,false)
 											+" "+PrintUtils.Print2dec(fSl,false)
 											+" "+bbars
 											+" "+PrintUtils.Print2dec(per,false)
 											;
-								for (int he=h;he<23;he++)
-									strat.set(he,str);
-								for (int y1=2014;y1<=2014;y1+=1){
+								//for (int he=h;he<23;he++)
+									//strat.set(he,str);
+								for (int y1=2004;y1<=2019;y1+=1){
 									int y2 = y1+0;	
-									for (int m1=0;m1<=0;m1+=1){
-										int m2 = m1+11;
+									for (int m1=0;m1<=9;m1+=3){
+										int m2 = m1+2;
 										if (m2>11){
 											m2 = m2 % 12;
 											y2=y1+1;
