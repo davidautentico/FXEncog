@@ -130,6 +130,7 @@ public abstract class AlgoBasic {
 			double avgLoss = sp.getLostPips()*0.1/sp.getLosses();
 			double perDays = totalDaysTrading*100.0/totalDays;
 			
+			if (perDays>=30.0 && pf>=1.30)
 			System.out.println(
 					header
 					+" || "

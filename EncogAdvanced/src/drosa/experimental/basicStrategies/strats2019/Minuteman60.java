@@ -268,14 +268,14 @@ public class Minuteman60 extends AlgoBasic {
 								
 				Minuteman60 mm = new Minuteman60();
 				StratPerformance sp = new StratPerformance(); 
-				for (int h1=10;h1<=10;h1++){
-					int h2 = h1+13;
+				for (int h1=0;h1<=0;h1++){
+					int h2 = h1+23;
 					for (int lt=1000;lt<=1000;lt+=100){
-						for (int st=120;st<=120;st+=12){
-							for (double thrlt=0.60;thrlt<=0.60;thrlt+=0.10){
+						for (int st=3;st<=120;st+=1){
+							for (double thrlt=0.20;thrlt<=0.80;thrlt+=0.05){
 								for (double tpR=4.00;tpR<=4.0;tpR+=0.50){	
-									for (int y1=2004;y1<=2019;y1++){
-										int y2 = y1+0;
+									for (int y1=2004;y1<=2004;y1++){
+										int y2 = y1+15;
 										String header="";
 										
 										mm.setParameters(lt, st, thrlt, tpR,true,true,h1,h2);
