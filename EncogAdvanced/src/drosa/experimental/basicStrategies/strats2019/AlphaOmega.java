@@ -30,11 +30,13 @@ public class AlphaOmega extends AlgoBasic  {
 	int lastDayTrade = -1;
 	int dayOrder = 0;
 	int lastDay = -1;
+	double tpf = 0.15;
 	
 	
 	public void setParameters(int h1,int h2,int h3,int h4,double f1,double f2,
 			int minRange,
-			int dayOrderThr
+			int dayOrderThr,
+			double tpf
 			){
 		this.h1=h1;
 		this.h2=h2;
@@ -44,6 +46,7 @@ public class AlphaOmega extends AlgoBasic  {
 		this.f2 = f2;
 		this.minRange = minRange;
 		this.dayOrderThr = dayOrderThr;
+		this.tpf = tpf;
 	}
 
 	@Override
@@ -77,11 +80,9 @@ public class AlphaOmega extends AlgoBasic  {
 						priceThr = low + target25;
 					}					
 					if (q.getOpen5()>priceThr){
-						pips = q.getOpen5()-p.getEntry();
 						isClosed = true;
 					}else{
 						if (h==23 && min==55){
-							pips = q.getOpen5()-p.getEntry();
 							isClosed = true;
 						}
 					}
@@ -97,11 +98,9 @@ public class AlphaOmega extends AlgoBasic  {
 						priceThr = high - target25;
 					}					
 					if (q.getOpen5()<priceThr){
-						pips = p.getEntry()-q.getOpen5();
 						isClosed = true;
 					}else{
 						if (h==23 && min==55){
-							pips = p.getEntry()-q.getOpen5();
 							isClosed = true;
 						}
 					}
@@ -109,7 +108,7 @@ public class AlphaOmega extends AlgoBasic  {
 			}
 			
 			if (isClosed){
-				sp.addTrade(p.getMicroLots(),pips);
+				sp.addTrade(p.getMicroLots(),pips,comm);
 				positions.remove(j);
 			}else{
 				j++;
@@ -136,6 +135,8 @@ public class AlphaOmega extends AlgoBasic  {
 		QuoteShort.getCalendar(cali, q);
 		int h = cali.get(Calendar.HOUR_OF_DAY);
 		int day = cali.get(Calendar.DAY_OF_YEAR);
+		int atr = atrArray.get(atrArray.size()-1);
+		int tp = (int) (atr*tpf);
 		
 		if (day!=lastDay){
 			dayOrder = 0;
@@ -153,10 +154,10 @@ public class AlphaOmega extends AlgoBasic  {
 			pos.setEntry(q.getOpen5());
 			pos.setPositionStatus(PositionStatus.OPEN);
 			pos.setPositionType(PositionType.SHORT);
-			pos.setTp(q.getOpen5()-7000);
-			pos.setSl(q.getOpen5()+5000);
+			pos.setTp(q.getOpen5()-tp);
+			pos.setSl(q.getOpen5()+50000);
 			
-			if (dayOrder==dayOrderThr){
+			if (dayOrder>=dayOrderThr){
 				positions.add(pos);
 				trades++;
 			}			
@@ -167,10 +168,10 @@ public class AlphaOmega extends AlgoBasic  {
 			pos.setEntry(q.getOpen5());
 			pos.setPositionStatus(PositionStatus.OPEN);
 			pos.setPositionType(PositionType.LONG);
-			pos.setTp(q.getOpen5()+7000);
-			pos.setSl(q.getOpen5()-5000);		
+			pos.setTp(q.getOpen5()+tp);
+			pos.setSl(q.getOpen5()-50000);		
 						
-			if (dayOrder==dayOrderThr){
+			if (dayOrder>=dayOrderThr){
 				positions.add(pos);
 				trades++;
 			}						
@@ -188,19 +189,26 @@ public class AlphaOmega extends AlgoBasic  {
 		
 		//String pathEURUSD = path0+"EURUSD_1 Min_Bid_2009.01.01_2019.04.01.csv";
 		//String pathEURUSD = path0+"EURUSD_4 Hours_Bid_2003.12.31_2019.07.23.csv";
-		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.23.csv";
+		String pathEURUSD1m = path0+"EURUSD_1 Mins_Bid_2004.01.01_2019.07.26.csv";
+		String pathEURUSD5m = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.26.csv";
+		String pathEURUSD10m = path0+"EURUSD_10 Mins_Bid_2004.01.01_2019.07.26.csv";
+		String pathEURUSD15m = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.07.26.csv";
+		String pathEURUSD30m = path0+"EURUSD_30 Mins_Bid_2004.01.01_2019.07.26.csv";
+		String pathEURUSD60m = path0+"EURUSD_60 Mins_Bid_2004.01.01_2019.07.26.csv";
 		//String pathEURUSD = path0+"EURUSD_1 Min_Bid_2009.01.01_2019.07.25.csv";
 		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.04.06.csv";
 			String pathNews = path0+"News.csv";
 			
 			ArrayList<String> paths = new ArrayList<String>();
-			paths.add(pathEURUSD);
+			paths.add(pathEURUSD1m);paths.add(pathEURUSD5m);
+			paths.add(pathEURUSD10m);paths.add(pathEURUSD15m);
+			paths.add(pathEURUSD30m);paths.add(pathEURUSD60m);
 			//paths.add(pathEURAUD);paths.add(pathNZDUSD);
 			
 			int total = 0;
 			ArrayList<Double> pfs = new ArrayList<Double>();
 			int limit = paths.size()-1;
-			limit = 0;
+			limit = 2;
 			String provider ="";
 			try {
 				Sizeof.runGC ();
@@ -213,7 +221,7 @@ public class AlphaOmega extends AlgoBasic  {
 			ArrayList<FFNewsClass> news = new ArrayList<FFNewsClass>();	
 			//FFNewsClass.readNews(pathNews,news,0);
 			ArrayList<Tick> ticks = new ArrayList<Tick>();
-			for (int i = 0;i<=limit;i++){
+			for (int i = 2;i<=limit;i++){
 				String path = paths.get(i);				
 				dataI 		= new ArrayList<QuoteShort>();			
 				dataI 		= DAO.retrieveDataShort5m(path, DataProvider.DUKASCOPY_FOREX4);			
@@ -224,19 +232,29 @@ public class AlphaOmega extends AlgoBasic  {
 								
 				AlphaOmega mm = new AlphaOmega();
 				int h1 = 0;
-				int h2 = h1+8;
-				int h3 = 18;
+				int h2 = h1+9;
+				int h3 = 10;
 				int h4 = 23;
 				StratPerformance sp = new StratPerformance();
-				for (h1=0;h1<=23;h1++){
-					h2 = h1+0;
-					for (double f1=0.50;f1<=0.50;f1+=0.10){
-						for (double f2=0.25;f2<=0.25;f2+=0.05){
+				for (h1=0;h1<=0;h1++){
+					h2 = h1+8;
+					h3 = h2+1;
+					for (double f1=0.40;f1<=0.40;f1+=0.10){
+						for (double f2=0.20;f2<=0.20;f2+=0.05){
 							for (int minRange = 100;minRange<=100;minRange+=10){
 								for (int dot=0;dot<=0;dot++){
-									mm.setParameters(h1, h2, h3, h4, f1, f2, minRange,dot);
-									String header=PrintUtils.Print2dec(f1, false)+" "+PrintUtils.Print2dec(f2, false)+" "+minRange;
-									mm.doTest(header,data, 2009, 2019, 0, 11, sp, 0, true);		
+									for (double tpf=0.10;tpf<=0.10;tpf+=0.01){
+										mm.setParameters(h1, h2, h3, h4, f1, f2, minRange,dot,tpf);
+										String header=PrintUtils.Print2dec(f1, false)
+												+" "+PrintUtils.Print2dec(f2, false)
+												+" "+minRange
+												+" "+PrintUtils.Print2dec(tpf, false)
+												;
+										for (int y1=2009;y1<=2019;y1++){
+											int y2 = y1+0;
+											mm.doTest(header,data, y1, y2, 0, 11, sp, 0, true);	
+										}
+									}
 								}
 							}
 						}

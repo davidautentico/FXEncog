@@ -13,6 +13,7 @@ import drosa.memory.Sizeof;
 import drosa.phil.TestLines;
 import drosa.strategies.PositionStatus;
 import drosa.strategies.auxiliar.PositionType;
+import drosa.utils.MathUtils;
 import drosa.utils.PrintUtils;
 import drosa.utils.TradingUtils;
 
@@ -24,17 +25,32 @@ public class Minuteman60 extends AlgoBasic {
 	double tpR = 5.0;
 	int lastDayTrade = -1;
 	boolean forward = true;
+	boolean reverse = false;
+	int h1=0;
+	int h2=23;
 	Calendar cal = Calendar.getInstance();
+	ArrayList<Integer> values = new ArrayList<Integer>();
 	
 	int totalDays = 0;
 	int totalDaysTrading = 0;
+	double trailPer = 0.10;
 	
-	public void setParameters(int lt,int st,double thrlt,double tpR,boolean forward){
+	public void setParameters(
+			int lt,int st,
+			double thrlt,
+			double tpR,
+			boolean forward,
+			boolean reverse,
+			int h1,int h2){
+		
 		this.lt = lt;
 		this.st = st;
 		this.thrlt = thrlt;
 		this.tpR = tpR;
 		this.forward = forward;
+		this.reverse = reverse;
+		this.h1 = h1;
+		this.h2 = h2;
 	}
 	
 	
@@ -88,89 +104,117 @@ public class Minuteman60 extends AlgoBasic {
 		QuoteShort.getCalendar(cal, q);
 		int day = cal.get(Calendar.DAY_OF_YEAR);
 		int h = cal.get(Calendar.HOUR_OF_DAY);
+		int min = cal.get(Calendar.MINUTE);
 		//miramos long-term direction
 		
 		int trades=0;
 		
-		//TEST LONG
-		int difflt = q.getOpen5()-data.get(i-lt).getOpen5();
-		int diffst = q.getOpen5()-data.get(i-st).getOpen5();
+		values.add(q.getOpen5());
+		int sma = (int) MathUtils.average(values, values.size()-st, values.size()-1);
 		
-		if (difflt>=0 && diffst>=0 
-				//&& h>=10
-				//&& day!=lastDayTrade
-				){		
-			//Test BULL
-			boolean isltl = difflt>=thrlt*atrArray.get(atrArray.size()-1) ? true:false;
-			boolean isstl = diffst>=0 ? true:false;
+		boolean aboveSMA = (q.getOpen5()-sma)>=thrlt*atrArray.get(atrArray.size()-1) ? true : false;
+		boolean belowSMA = (sma-q.getOpen5())>=thrlt*atrArray.get(atrArray.size()-1) ? true : false;
+		int rdistanceL = (int) (thrlt*atrArray.get(atrArray.size()-1));
+		int rdistanceH = (int) (thrlt*atrArray.get(atrArray.size()-1));
+		
+		if (h>=h1 && h<=h2)
+		if (aboveSMA
+				){							
+			//abrimos posicion long
+			PositionShort pos = new PositionShort();
+			pos.setEntry(q.getOpen5());
+			pos.setPositionStatus(PositionStatus.OPEN);
+			if (forward){
+				pos.setPositionType(PositionType.LONG);
+				pos.setSl(q.getOpen5()-rdistanceL);
+				pos.setTp((int) (q.getOpen5() + rdistanceL*tpR));
+				if (reverse){
+					pos.setSl((int) (q.getOpen5() - rdistanceL*tpR));
+					pos.setTp(q.getOpen5()+rdistanceL);
+				}
+			}else{
+				pos.setPositionType(PositionType.SHORT);
+				pos.setSl(q.getOpen5()+rdistanceH);
+				pos.setTp((int) (q.getOpen5()-rdistanceH*tpR));
+				if (reverse){
+					pos.setSl((int) (q.getOpen5() + rdistanceH*tpR));
+					pos.setTp((int) (q.getOpen5() - rdistanceH));
+				}
+			}
+
+			positions.add(pos);			
+			if (day!=lastDayTrade) totalDaysTrading++;			
+			lastDayTrade = day;
+			trades++;
+		}else if (belowSMA){
+			//abrimos posicion long
+			PositionShort pos = new PositionShort();
+			pos.setEntry(q.getOpen5());
+			pos.setPositionStatus(PositionStatus.OPEN);
+			if (forward){
+				pos.setPositionType(PositionType.SHORT);
+				pos.setSl(q.getOpen5()+rdistanceH);
+				pos.setTp((int) (q.getOpen5()-rdistanceH*tpR));
+				if (reverse){
+					pos.setSl((int) (q.getOpen5() + rdistanceH*tpR));
+					pos.setTp((int) (q.getOpen5() - rdistanceH));
+				}
+			}else{
+				pos.setPositionType(PositionType.LONG);
+				pos.setSl(q.getOpen5()-rdistanceL);
+				pos.setTp((int) (q.getOpen5() + rdistanceL*tpR));
+				if (reverse){
+					pos.setSl((int) (q.getOpen5() - rdistanceL*tpR));
+					pos.setTp(q.getOpen5()+rdistanceL);
+				}
+			}
+			positions.add(pos);	
 			
-			boolean shortTermVol = (q.getOpen5()-data.get(i-this.st).getOpen5())>=thrlt*atrArray.get(atrArray.size()-1) ? true : false;
-			int rdistance = q.getOpen5()-data.get(i-st).getLow5();
-			if (shortTermVol
-					//&& isltl 
-					//&& isstl 
-					){							
-				//abrimos posicion long
-				PositionShort pos = new PositionShort();
-				pos.setEntry(q.getOpen5());
-				pos.setPositionStatus(PositionStatus.OPEN);
-				if (forward){
-					pos.setPositionType(PositionType.LONG);
-					pos.setSl(data.get(i-st).getLow5());
-					pos.setTp((int) (q.getOpen5() + rdistance*tpR));
-				}else{
-					pos.setPositionType(PositionType.SHORT);
-					pos.setTp(data.get(i-st).getLow5());
-					pos.setSl((int) (q.getOpen5() + rdistance*tpR));
-				}
-				positions.add(pos);
-				
-				if (day!=lastDayTrade) totalDaysTrading++;
-				
-				lastDayTrade = day;
-				trades++;
-			}
-		}else if (difflt<=0 
-				&& diffst<=0 
-				//&& day!=lastDayTrade
-				//&& h>=10
-				){
-			boolean isltl = -difflt>=thrlt*atrArray.get(atrArray.size()-1) ? true:false;
-			boolean isstl = -diffst>=0 ? true:false;
-			boolean shortTermVol = (data.get(i-this.st).getOpen5()-q.getOpen5())>=thrlt*atrArray.get(atrArray.size()-1) ? true : false;
-					
-			int rdistance = data.get(i-st).getHigh5()-q.getOpen5();
-			if (	shortTermVol
-					//isltl 
-					//&& isstl
-					){
-				//abrimos posicion long
-				PositionShort pos = new PositionShort();
-				pos.setEntry(q.getOpen5());
-				pos.setPositionStatus(PositionStatus.OPEN);
-				if (forward){
-					pos.setPositionType(PositionType.SHORT);
-					pos.setSl(data.get(i-st).getHigh5());
-					pos.setTp((int) (q.getOpen5() - rdistance*tpR));
-				}else{
-					pos.setPositionType(PositionType.LONG);
-					pos.setTp(data.get(i-st).getHigh5());
-					pos.setSl((int) (q.getOpen5() - rdistance*tpR));
-				}
-				positions.add(pos);	
-				
-				if (day!=lastDayTrade) totalDaysTrading++;
-				
-				lastDayTrade = day;
-				trades++;
-			}
+			if (day!=lastDayTrade) totalDaysTrading++;
+			
+			lastDayTrade = day;
+			trades++;
+
 		}		
 		return trades;
 	}
 	
 	@Override
 	public void doManagePositions(ArrayList<QuoteShort> data, int i, ArrayList<PositionShort> positions) {
-		// TODO Auto-generated method stub
+		
+		if (trailPer<=0.0) return;
+		
+		QuoteShort q = data.get(i);
+		int j = 0;
+		while (j<positions.size()){
+			PositionShort p = positions.get(j);
+			boolean isClosed = false;
+			int pips = 0;
+			if (p.getPositionStatus()==PositionStatus.OPEN){
+				if (p.getPositionType()==PositionType.LONG){
+					int trail = q.getOpen5()-p.getEntry();
+					if (trail>=200){
+						int trailPips = (int) (trail*trailPer);
+						if (trailPips>=20){
+							if (p.getEntry()+trailPips>p.getSl() && p.getEntry()+trailPips<q.getOpen5()){
+								p.setSl(p.getEntry()+trailPips);
+							}
+						}
+					}
+				}else if (p.getPositionType()==PositionType.SHORT){
+					int trail = -q.getOpen5()+p.getEntry();
+					if (trail>=200){
+						int trailPips = (int) (trail*trailPer);
+						if (trailPips>=20){
+							if (p.getEntry()-trailPips<p.getSl() && p.getEntry()-trailPips>q.getOpen5()){
+								p.setSl(p.getEntry()-trailPips);
+							}
+						}
+					}
+				}
+			}
+			j++;
+		}
 		
 	}
 
@@ -189,7 +233,7 @@ public class Minuteman60 extends AlgoBasic {
 		
 		//String pathEURUSD = path0+"EURUSD_1 Min_Bid_2009.01.01_2019.04.01.csv";
 		//String pathEURUSD = path0+"EURUSD_4 Hours_Bid_2003.12.31_2019.07.23.csv";
-		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.23.csv";
+		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.31.csv";
 		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.04.06.csv";
 			String pathNews = path0+"News.csv";
 			
@@ -224,13 +268,45 @@ public class Minuteman60 extends AlgoBasic {
 								
 				Minuteman60 mm = new Minuteman60();
 				StratPerformance sp = new StratPerformance(); 
-				for (int lt=1000;lt<=1000;lt+=100){
-					for (int st=48;st<=48;st+=100){
-						for (double thrlt=0.1;thrlt<=6.5;thrlt+=0.1){
-							for (double tpR=0.50;tpR<=0.50;tpR+=0.1){
-								mm.setParameters(lt, st, thrlt, tpR,false);
-								String header=st+" "+PrintUtils.Print2dec(thrlt, false)+" "+PrintUtils.Print2dec(tpR, false);
-								mm.doTest(header,data, 2014, 2019, 0, 11, sp, 0, true);								
+				for (int h1=10;h1<=10;h1++){
+					int h2 = h1+13;
+					for (int lt=1000;lt<=1000;lt+=100){
+						for (int st=120;st<=120;st+=12){
+							for (double thrlt=0.60;thrlt<=0.60;thrlt+=0.10){
+								for (double tpR=4.00;tpR<=4.0;tpR+=0.50){	
+									for (int y1=2004;y1<=2019;y1++){
+										int y2 = y1+0;
+										String header="";
+										
+										mm.setParameters(lt, st, thrlt, tpR,true,true,h1,h2);
+										header=st+" "+PrintUtils.Print2dec(thrlt, false)
+										+" "+PrintUtils.Print2dec(tpR, false)
+										+" "+h1+" "+h2
+										;
+										//mm.doTest(header,data, 2009, 2019, 0, 11, sp, 0,true);
+										
+										mm.setParameters(lt, st, thrlt, tpR,true,false,h1,h2);
+										header=st+" "+PrintUtils.Print2dec(thrlt, false)
+										+" "+PrintUtils.Print2dec(tpR, false)
+										+" "+h1+" "+h2
+										;
+										mm.doTest(header,data, y1, y2, 0, 11, sp, 0,true);		
+										
+										mm.setParameters(lt, st, thrlt, tpR,false,true,h1,h2);
+										header=st+" "+PrintUtils.Print2dec(thrlt, false)
+										+" "+PrintUtils.Print2dec(tpR, false)
+										+" "+h1+" "+h2
+										;
+										//mm.doTest(header,data, 2009, 2019, 0, 11, sp, 0,true);		
+										
+										mm.setParameters(lt, st, thrlt, tpR,false,false,h1,h2);
+										header=st+" "+PrintUtils.Print2dec(thrlt, false)
+										+" "+PrintUtils.Print2dec(tpR, false)
+										+" "+h1+" "+h2
+										;
+										//mm.doTest(header,data, 2009, 2019, 0, 11, sp, 0,true);	
+									}
+								}
 							}
 						}
 					}

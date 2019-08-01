@@ -111,8 +111,9 @@ public class StratPerformance {
 		losses = 0;
 	}
 	
-	public void addTrade(long miniLots,int pips) {
+	public void addTrade(long miniLots,int pips,int comm) {
 		trades++;
+		pips-=comm;
 		if (pips>=0){
 			winPips += pips;
 			wins++;
