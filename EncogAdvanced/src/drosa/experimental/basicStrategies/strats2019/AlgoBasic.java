@@ -16,6 +16,7 @@ public abstract class AlgoBasic {
 	int high = -1;
 	int low = -1;
 	Calendar cali = Calendar.getInstance();
+	int comm = 15;
 		
 	public void doTest(			
 			String header,
@@ -37,7 +38,8 @@ public abstract class AlgoBasic {
 		int lastDay = -1;
 		int totalDays = 0;
 		int totalDaysTrading = 0;
-		
+
+
 		atrArray.add(800);
 		sp.reset();
 		sp.setInitialBalance(5000);
@@ -85,6 +87,7 @@ public abstract class AlgoBasic {
 						if (q.getLow5()<=p.getSl()){
 							pips = p.getSl()-p.getEntry();
 							isClosed = true;
+							//System.out.println("[long sl touched] "+pips+" "+(p.getTp()-p.getEntry()));
 						}else if (q.getHigh5()>=p.getTp()){
 							pips = p.getTp()-p.getEntry();
 							isClosed = true;
@@ -101,7 +104,7 @@ public abstract class AlgoBasic {
 				}
 				
 				if (isClosed){
-					sp.addTrade(p.getMicroLots(),pips);
+					sp.addTrade(p.getMicroLots(),pips,comm);
 					positions.remove(j);
 				}else{
 					j++;
@@ -123,14 +126,19 @@ public abstract class AlgoBasic {
 			double winPer = sp.getWins()*100.0/sp.getTrades();
 			double pf = sp.getWinPips()*1.0/sp.getLostPips();
 			double avgPips = (sp.getWinPips()-sp.getLostPips())*0.1/sp.getTrades();
+			double avgWin = sp.getWinPips()*0.1/sp.getWins();
+			double avgLoss = sp.getLostPips()*0.1/sp.getLosses();
 			double perDays = totalDaysTrading*100.0/totalDays;
 			
 			System.out.println(
 					header
-					+" || "+sp.getTrades()
+					+" || "
+					+sp.getTrades()
 					+" "+PrintUtils.Print2dec(winPer, false)
 					+" "+PrintUtils.Print2dec(pf, false)
 					+" "+PrintUtils.Print2dec(avgPips, false)
+					+" "+PrintUtils.Print2dec(avgWin, false)
+					+" "+PrintUtils.Print2dec(avgLoss, false)
 					+" "+PrintUtils.Print2dec(sp.getMaxDD(), false)
 					+" || "+" "+PrintUtils.Print2dec(perDays, false)
 					);

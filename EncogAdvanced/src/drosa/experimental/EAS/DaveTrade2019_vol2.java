@@ -441,7 +441,7 @@ public class DaveTrade2019_vol2 {
 	
 	public static void main(String[] args) {
 		String path0 ="C:\\fxdata\\";
-		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.23.csv";
+		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.31.csv";
 						
 		ArrayList<String> paths = new ArrayList<String>();
 		paths.add(pathEURUSD);
@@ -493,10 +493,10 @@ public class DaveTrade2019_vol2 {
 			strat.set(22,"40 0.30 5");
 			ArrayList<Integer> dayPips1 = new ArrayList<Integer>();
 			
-			for (int y1=2004;y1<=2019;y1++){
-				int y2 = y1+0;
-				for (int m1=0;m1<=8;m1+=1){
-					int m2 = m1+3;
+			for (int y1=2009;y1<=2009;y1++){
+				int y2 = y1+10;
+				for (int m1=0;m1<=0;m1+=1){
+					int m2 = m1+1;
 					DaveTrade2019_vol2.doTest("", data, y1, y2, m1, m2, strat, true, 0.2, 2);
 				}				
 			}
