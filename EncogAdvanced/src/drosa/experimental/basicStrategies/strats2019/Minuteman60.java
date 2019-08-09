@@ -33,7 +33,7 @@ public class Minuteman60 extends AlgoBasic {
 	
 	int totalDays = 0;
 	int totalDaysTrading = 0;
-	double trailPer = 0.10;
+	
 	
 	public void setParameters(
 			int lt,int st,
@@ -117,7 +117,9 @@ public class Minuteman60 extends AlgoBasic {
 		int rdistanceL = (int) (thrlt*atrArray.get(atrArray.size()-1));
 		int rdistanceH = (int) (thrlt*atrArray.get(atrArray.size()-1));
 		
-		if (h>=h1 && h<=h2)
+		if (h>=h1 && h<=h2
+				//&& (h!=11 && h!=12 && h!=13 && h!=14)
+				)
 		if (aboveSMA
 				){							
 			//abrimos posicion long
@@ -141,6 +143,9 @@ public class Minuteman60 extends AlgoBasic {
 					pos.setTp((int) (q.getOpen5() - rdistanceH));
 				}
 			}
+			//calculate miniLots
+			int microLots = 1;
+			pos.setMicroLots(microLots);
 
 			positions.add(pos);			
 			if (day!=lastDayTrade) totalDaysTrading++;			
@@ -168,6 +173,10 @@ public class Minuteman60 extends AlgoBasic {
 					pos.setTp(q.getOpen5()+rdistanceL);
 				}
 			}
+			//calculate miniLots
+			int microLots = 1;
+			pos.setMicroLots(microLots);
+
 			positions.add(pos);	
 			
 			if (day!=lastDayTrade) totalDaysTrading++;
@@ -233,7 +242,8 @@ public class Minuteman60 extends AlgoBasic {
 		
 		//String pathEURUSD = path0+"EURUSD_1 Min_Bid_2009.01.01_2019.04.01.csv";
 		//String pathEURUSD = path0+"EURUSD_4 Hours_Bid_2003.12.31_2019.07.23.csv";
-		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.31.csv";
+		//String pathEURUSD = path0+"EURUSD_Hourly_Bid_2004.01.01_2019.08.02.csv";
+		String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.08.02.csv";
 		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.04.06.csv";
 			String pathNews = path0+"News.csv";
 			
@@ -268,16 +278,29 @@ public class Minuteman60 extends AlgoBasic {
 								
 				Minuteman60 mm = new Minuteman60();
 				StratPerformance sp = new StratPerformance(); 
+				
+				//02-08-2019
+				//eur 1min 30 0.30 4.00 10 22 || 1.70 29.52
+				//eur 5min 10 0.30 4.00 10 22 || 1.65 29.47
+				//eur 15min 6 0.30 4.00 10 22 || 1.51 31.34
+				//eur 60min 3 0.30 4.00 10 22 || 1.30 24.88 
 				for (int h1=10;h1<=10;h1++){
-					int h2 = h1+13;
+					int h2 = h1+12;
 					for (int lt=1000;lt<=1000;lt+=100){
-						for (int st=120;st<=120;st+=12){
-							for (double thrlt=0.60;thrlt<=0.60;thrlt+=0.10){
-								for (double tpR=4.00;tpR<=4.0;tpR+=0.50){	
-									for (int y1=2004;y1<=2019;y1++){
-										int y2 = y1+0;
-										String header="";
+						for (int st=6;st<=100;st+=6){
+							for (double thrlt=0.50;thrlt<=0.70;thrlt+=0.05){
+								for (double tpR=4.00;tpR<=4.00;tpR+=0.10){	
+									for (int y1=2004;y1<=2004;y1++){
+										int y2 = y1+15;
 										
+										try {
+											Sizeof.runGC ();
+										} catch (Exception e) {
+											// TODO Auto-generated catch block
+											e.printStackTrace();
+										}
+										
+										String header="";										
 										mm.setParameters(lt, st, thrlt, tpR,true,true,h1,h2);
 										header=st+" "+PrintUtils.Print2dec(thrlt, false)
 										+" "+PrintUtils.Print2dec(tpR, false)
@@ -289,6 +312,7 @@ public class Minuteman60 extends AlgoBasic {
 										header=st+" "+PrintUtils.Print2dec(thrlt, false)
 										+" "+PrintUtils.Print2dec(tpR, false)
 										+" "+h1+" "+h2
+										+" "+y1+" "+y2
 										;
 										mm.doTest(header,data, y1, y2, 0, 11, sp, 0,true);		
 										
@@ -315,8 +339,5 @@ public class Minuteman60 extends AlgoBasic {
 			}
 
 	}
-
-
-
 
 }

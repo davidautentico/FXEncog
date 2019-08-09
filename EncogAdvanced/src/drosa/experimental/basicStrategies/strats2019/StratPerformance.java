@@ -1,5 +1,13 @@
 package drosa.experimental.basicStrategies.strats2019;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+
+import drosa.utils.MathUtils;
+
 public class StratPerformance {
 	
 	double pf = 0.0;
@@ -11,11 +19,16 @@ public class StratPerformance {
 	int trades = 0;
 	int wins = 0;
 	int losses = 0;
+	int maxAdversionAcc = 0;
+	double maxAdversionAvg = 0; 
 	
 	double initialBalance = 0;
 	double maxBalance = 0;
 	double actualBalance = 0;
 	double maxDD = 0;
+	double profitPer = 0.0;
+	
+	HashMap<Integer,ArrayList<Double>> monthData = new HashMap<Integer,ArrayList<Double>>();
 	
 	public double getPf() {
 		return pf;
@@ -98,6 +111,61 @@ public class StratPerformance {
 	public void setActualBalance(double actualBalance) {
 		this.actualBalance = actualBalance;
 	}
+	
+	public double getProfitPer() {
+		return profitPer;
+	}
+	public void setProfitPer(double profitPer) {
+		this.profitPer = profitPer;
+	}
+	
+	public int getMaxAdversionAcc() {
+		return maxAdversionAcc;
+	}
+	public void setMaxAdversionAcc(int maxAdversionAcc) {
+		this.maxAdversionAcc = maxAdversionAcc;
+	}
+	public double getMaxAdversionAvg() {
+		return maxAdversionAvg;
+	}
+	public void setMaxAdversionAvg(double maxAdversionAvg) {
+		this.maxAdversionAvg = maxAdversionAvg;
+	}
+	
+	//avgDD	
+	public double getMonthDataDD(double dt){
+		
+		double val = 0;
+		ArrayList<Double> values = new ArrayList<Double>();
+		
+		Object[] keys = monthData.keySet().toArray();
+		Arrays.sort(keys);
+		
+		double lastBalance = initialBalance;
+		for(Object key : keys) {
+			ArrayList<Double> v = monthData.get(key);
+			double initialBal = v.get(0);
+			double maxDD = 0.0;
+			double maxBal= initialBal;
+			for (int i=1;i<v.size();i++){
+				double aBal = v.get(i);
+				if (aBal<maxBal){
+					double dd = 100.0-aBal*100.0/maxBal;
+					if (dd>=maxDD) maxDD = dd;
+				}else{
+					maxBal = aBal;
+				};
+			}
+			//System.out.println(key+" "+maxDD);
+			values.add(maxDD);
+		}
+		
+		double avg = MathUtils.average(values);
+		double dt1 = Math.sqrt(MathUtils.variance(values));
+		
+		return avg+dt1*dt;
+	}
+	
 	public void reset() {
 		pf = 0.0;
 		pfYears = 0.0;
@@ -109,9 +177,10 @@ public class StratPerformance {
 		trades = 0;
 		wins = 0;
 		losses = 0;
+		monthData.clear();
 	}
 	
-	public void addTrade(long miniLots,int pips,int comm) {
+	public void addTrade(long miniLots,int pips,int maxAdversion,int comm,Calendar cal) {
 		trades++;
 		pips-=comm;
 		if (pips>=0){
@@ -121,6 +190,9 @@ public class StratPerformance {
 			lostPips += -pips;
 			losses++;
 		}		
+		//averagemaxloss
+		maxAdversionAcc += maxAdversion;
+		maxAdversionAvg = maxAdversionAcc*0.1/trades;
 		
 		actualBalance += miniLots*0.1*pips;
 		if (actualBalance>=maxBalance){
@@ -130,7 +202,24 @@ public class StratPerformance {
 			if (actualDD>=maxDD){
 				maxDD = actualDD;
 			}
-		}		
+		}	
+		
+		profitPer = actualBalance*100.0/initialBalance-100.0;
+		
+		int m = cal.get(Calendar.MONTH);
+		int y = cal.get(Calendar.YEAR);
+		
+		int key = y*100+m;
+		if (!monthData.containsKey(key)){
+			monthData.put(key, new ArrayList<Double>());
+		}
+
+		monthData.get(key).add(actualBalance);
+		/*if (!monthData.containsKey(key)){
+			monthData.put(key, actualBalance);
+		}else{
+			monthData.p
+		}*/
 	}
 	
 

@@ -3810,7 +3810,7 @@ public class TestMeanReversion {
 				
 				
 		//String pathEURUSD = path0+"EURUSD_1 Min_Bid_2009.01.01_2019.04.01.csv";
-		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.07.23.csv";
+		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.08.06.csv";
 		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.04.06.csv";
 			String pathNews = path0+"News.csv";
 			
@@ -3876,13 +3876,13 @@ public class TestMeanReversion {
 				for (int h1=0;h1<=0;h1++){
 					int h2 = h1+9;
 
-					for (int n=54;n<=54;n+=1){
+					for (int n=1;n<=80;n+=1){
 						for (int nBars=0;nBars<=0;nBars+=1){
 							for (int backBars=0;backBars<=0;backBars+=100){
 								String params =n+" "+nBars;
 								for (int j=0;j<=23;j++) strat3.set(j,"-1");
 								for (int j=h1;j<=h2;j++) strat3.set(j,params);
-								for (double fMinPips=0.25;fMinPips<=0.25;fMinPips+=0.01){
+								for (double fMinPips=0.20;fMinPips<=0.20;fMinPips+=0.01){
 									for (int atrLimit=9900;atrLimit<=9900;atrLimit+=100){
 										for (int timeFrame=5;timeFrame<=5;timeFrame+=5){
 											for (int maxOpenPositions=30;maxOpenPositions<=30;maxOpenPositions+=5){
@@ -3891,8 +3891,8 @@ public class TestMeanReversion {
 															+" "+PrintUtils.Print2dec(fMinPips, false)
 															+" "+backBars+" "+maxOpenPositions
 															;
-													for (int y1=2009;y1<=2019;y1++){
-														int y2 = y1+0;
+													for (int y1=2004;y1<=2004;y1++){
+														int y2 = y1+4;
 														for (int m1=0;m1<=0;m1+=1){
 															int m2 = m1+11;
 			
@@ -3904,7 +3904,7 @@ public class TestMeanReversion {
 																	strat3,dayPips1,
 																	false,timeFrame,
 																	maxOpenPositions,
-																	aRisk,true,
+																	aRisk,false,
 																	2,false,false,null);
 															
 															int offset = 100;

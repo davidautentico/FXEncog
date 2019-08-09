@@ -18,8 +18,8 @@ public class PositionShort {
 	Calendar openCal = Calendar.getInstance();
 	Calendar closeCal = Calendar.getInstance();
 	int entry = 0;
-	int sl = 0;
-	int tp = 0;
+	int sl = -1;
+	int tp = -1;
 	int expiredTime = 0;
 	long microLots = 0;
 	double margin = 0;
@@ -45,8 +45,15 @@ public class PositionShort {
 	private int order0 = 0;
 	private int maxProfit = 0;
 	private int transactionCosts = 0;
+	private int maxLoss=0;
 	
 	
+	public int getMaxLoss() {
+		return maxLoss;
+	}
+	public void setMaxLoss(int maxLoss) {
+		this.maxLoss = maxLoss;
+	}
 	public int getTransactionCosts() {
 		return transactionCosts;
 	}
