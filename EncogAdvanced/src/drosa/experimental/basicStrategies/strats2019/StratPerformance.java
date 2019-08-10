@@ -29,6 +29,8 @@ public class StratPerformance {
 	double profitPer = 0.0;
 	
 	HashMap<Integer,ArrayList<Double>> monthData = new HashMap<Integer,ArrayList<Double>>();
+	HashMap<Integer,ArrayList<Integer>> monthTradesP = new HashMap<Integer,ArrayList<Integer>>();
+	HashMap<Integer,ArrayList<Integer>> monthTradesSL = new HashMap<Integer,ArrayList<Integer>>();
 	
 	public double getPf() {
 		return pf;
@@ -166,6 +168,60 @@ public class StratPerformance {
 		return avg+dt1*dt;
 	}
 	
+	//avgDD	
+	public double getMonthDataDDRR(double initialBalance,double risk,double dt){
+		
+		double val = 0;
+		ArrayList<Double> values = new ArrayList<Double>();
+		
+		Object[] keys = monthTrades.keySet().toArray();
+		Arrays.sort(keys);
+		
+		double lastBalance = initialBalance;
+		for(Object key : keys) {
+			ArrayList<Double> v =  monthTrades.get(key);
+			double initialBal = initialBalance;
+			double maxDD = 0.0;
+			double maxBal= initialBal;
+			double actualBal = initialBal;
+			for (int i=0;i<v.size();i++){
+				double riskF = v.get(i)*risk;
+				
+				double old = actualBal;
+				actualBal  = actualBal*(1+riskF/100.0);
+				System.out.println(v.get(i)
+						+" || "+old
+						+" || "+actualBal
+						+" "+risk
+						);
+				if (actualBal<maxBal){
+					double dd = 100.0-actualBal*100.0/maxBal;
+					if (dd>=maxDD){
+						maxDD = dd;
+						/*System.out.println("[maxdd] "+v.get(i)
+								+" || "+actualBal+" || "+maxBal
+								+" || "+dd
+								);*/
+					}
+				}else{
+					maxBal = actualBal;
+				};
+				/*System.out.println(v.get(i)
+						+" || "+actualBal+" || "+maxBal
+						);*/
+			}
+			if (v.size()>0){
+				System.out.println(key+" "+maxDD);
+				values.add(maxDD);
+			}
+		}
+		
+		double avg = MathUtils.average(values);
+		double dt1 = Math.sqrt(MathUtils.variance(values));
+		
+		return avg+dt1*dt;
+	}
+	
 	public void reset() {
 		pf = 0.0;
 		pfYears = 0.0;
@@ -178,9 +234,16 @@ public class StratPerformance {
 		wins = 0;
 		losses = 0;
 		monthData.clear();
+		monthTradesP.clear();
+		monthTradesSL.clear();
 	}
 	
-	public void addTrade(long miniLots,int pips,int maxAdversion,int comm,Calendar cal) {
+	public void addTrade(long miniLots,
+			int pips,
+			int sl,//reward:risk
+			int maxAdversion,
+			int comm,
+			Calendar cal) {
 		trades++;
 		pips-=comm;
 		if (pips>=0){
@@ -212,9 +275,13 @@ public class StratPerformance {
 		int key = y*100+m;
 		if (!monthData.containsKey(key)){
 			monthData.put(key, new ArrayList<Double>());
+			monthTradesP.put(key, new ArrayList<Integer>());
+			monthTradesSL.put(key, new ArrayList<Integer>());
 		}
 
 		monthData.get(key).add(actualBalance);
+		monthTradesP.get(key).add(pips);
+		monthTradesSL.get(key).add(sl);
 		/*if (!monthData.containsKey(key)){
 			monthData.put(key, actualBalance);
 		}else{

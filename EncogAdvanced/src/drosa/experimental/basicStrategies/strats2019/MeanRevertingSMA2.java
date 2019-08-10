@@ -89,7 +89,9 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 			}
 			
 			if (isClosed){
-				sp.addTrade(p.getMicroLots(),pips,p.getMaxLoss(),p.getTransactionCosts(),cali);
+				int pipsSL = Math.abs(p.getEntry()-p.getSl());
+				double rr = pips*1.0/pipsSL;
+				sp.addTrade(p.getMicroLots(),pips,pipsSL,p.getMaxLoss(),p.getTransactionCosts(),cali);
 				positions.remove(j);
 			}else{
 				j++;
@@ -236,26 +238,30 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 			MeanRevertingSMA2 mm = new MeanRevertingSMA2();
 			StratPerformance sp = new StratPerformance(); 
 			
+			//30min
+			//8 0.13 1.00 15 0 8 
+			//18 0.14 1.00 13 0.15
 			for (int h1=0;h1<=0;h1++){
 				int h2 = h1+8;
 				for (int nbars=18;nbars<=18;nbars+=1){
-					for (double fdiff=0.20;fdiff<=0.20;fdiff+=0.01){
-						for (double fsl=0.05;fsl<=1.00;fsl+=0.05){	
+					for (double fdiff=0.10;fdiff<=0.10;fdiff+=0.01){
+						for (double fsl=1.00;fsl<=1.00;fsl+=0.05){	
 							double risk = 0.15;
-							for (int maxPositions=15;maxPositions<=15;maxPositions+=1){
-								for (int y1=2009;y1<=2009;y1++){
-									int y2 = y1+10;
+							for (int maxPositions=13;maxPositions<=13;maxPositions+=1){
+								for (int y1=2011;y1<=2011;y1++){
+									int y2 = y1+0;
 									for (int m1=0;m1<=0;m1+=1){
-										int m2 = m1+11;
+										int m2 = m1+0;
 										mm = new MeanRevertingSMA2();
 										sp = new StratPerformance();
-										sp.setInitialBalance(5000);
+										sp.setInitialBalance(100000);
 										
 										mm.setParameters(nbars,fdiff,fsl,0.0,risk,maxPositions,false,h1,h2);
 										
 										String header=nbars
 										+" "+PrintUtils.Print2dec(fdiff, false)
 										+" "+PrintUtils.Print2dec(fsl, false)
+										+" "+PrintUtils.Print2dec(risk, false)
 										+" "+maxPositions
 										+" "+h1+" "+h2
 										+" "+y1+" "+y2

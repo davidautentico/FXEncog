@@ -170,7 +170,10 @@ public abstract class AlgoBasic {
 				}
 				
 				if (isClosed){
-					sp.addTrade(p.getMicroLots(),pips,p.getMaxLoss(),p.getTransactionCosts(),cal);
+					int pipsSL = Math.abs(p.getEntry()-p.getSl());
+					double rr = pips*1.0/pipsSL;
+					System.out.println(rr);
+					sp.addTrade(p.getMicroLots(),pips,pipsSL,p.getMaxLoss(),p.getTransactionCosts(),cal);
 					positions.remove(j);
 				}else{
 					j++;
@@ -204,7 +207,8 @@ public abstract class AlgoBasic {
 			double perDays = totalDaysTrading*100.0/totalDays;
 			double factor = sp.getProfitPer()/sp.getMaxDD();
 			double avgMaxAdversion = sp.getMaxAdversionAvg();
-			double var95 = sp.getMonthDataDD(2);
+			//double var95 = sp.getMonthDataDD(2);
+			double var95 = sp.getMonthDataDDRR(sp.getInitialBalance(),this.risk,2);
 			if (true 
 					&& printOptions==0 
 					||
@@ -232,7 +236,7 @@ public abstract class AlgoBasic {
 					+" "+PrintUtils.Print2dec(perDays, false)
 					+" "+PrintUtils.Print2dec(sp.getMaxDD(), false)
 					+" "+PrintUtils.Print2dec(sp.getProfitPer()/sp.getMaxDD(), false)
-					+" "+PrintUtils.Print2dec(sp.getMonthDataDD(2), false)
+					+" "+PrintUtils.Print2dec(var95,false)
 					);
 		//}
 	}
