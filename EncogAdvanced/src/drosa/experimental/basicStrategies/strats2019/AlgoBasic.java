@@ -172,7 +172,7 @@ public abstract class AlgoBasic {
 				if (isClosed){
 					int pipsSL = Math.abs(p.getEntry()-p.getSl());
 					double rr = pips*1.0/pipsSL;
-					System.out.println(rr);
+					//System.out.println(rr);
 					sp.addTrade(p.getMicroLots(),pips,pipsSL,p.getMaxLoss(),p.getTransactionCosts(),cal);
 					positions.remove(j);
 				}else{

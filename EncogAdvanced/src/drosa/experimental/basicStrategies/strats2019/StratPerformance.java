@@ -168,32 +168,48 @@ public class StratPerformance {
 		return avg+dt1*dt;
 	}
 	
+	public static int getMiniLots(double actualBalance,int sl,double risk){
+		
+		double riskPosition = actualBalance*risk*1.0/100.0;
+		double riskPip = riskPosition/(sl*0.1);
+		int microLots = (int) (riskPip/0.10);
+		if (microLots<=0) microLots = 1;
+		
+		return microLots;
+	}
+	
 	//avgDD	
 	public double getMonthDataDDRR(double initialBalance,double risk,double dt){
 		
 		double val = 0;
 		ArrayList<Double> values = new ArrayList<Double>();
 		
-		Object[] keys = monthTrades.keySet().toArray();
+		Object[] keys = monthTradesP.keySet().toArray();
 		Arrays.sort(keys);
+		
+		Object[] keysSL = monthTradesSL.keySet().toArray();
+		Arrays.sort(keysSL);
 		
 		double lastBalance = initialBalance;
 		for(Object key : keys) {
-			ArrayList<Double> v =  monthTrades.get(key);
+			ArrayList<Integer> pipsA =  monthTradesP.get(key);
+			ArrayList<Integer> pipsSL =  monthTradesSL.get(key);
 			double initialBal = initialBalance;
 			double maxDD = 0.0;
 			double maxBal= initialBal;
 			double actualBal = initialBal;
-			for (int i=0;i<v.size();i++){
-				double riskF = v.get(i)*risk;
+			for (int i=0;i<pipsA.size();i++){
+				int pips = pipsA.get(i);
+				int sl = pipsSL.get(i);
+				int microLots = StratPerformance.getMiniLots(actualBal, sl, risk);
 				
 				double old = actualBal;
-				actualBal  = actualBal*(1+riskF/100.0);
-				System.out.println(v.get(i)
+				actualBal  +=microLots*0.1*pips;
+				/*System.out.println(microLots+" "+pips
 						+" || "+old
 						+" || "+actualBal
 						+" "+risk
-						);
+						);*/
 				if (actualBal<maxBal){
 					double dd = 100.0-actualBal*100.0/maxBal;
 					if (dd>=maxDD){
@@ -210,14 +226,16 @@ public class StratPerformance {
 						+" || "+actualBal+" || "+maxBal
 						);*/
 			}
-			if (v.size()>0){
-				System.out.println(key+" "+maxDD);
+			if (pipsA.size()>0){
+				//System.out.println(key+" "+maxDD);
 				values.add(maxDD);
 			}
 		}
 		
 		double avg = MathUtils.average(values);
 		double dt1 = Math.sqrt(MathUtils.variance(values));
+		
+		//System.out.println(avg+" "+dt1);
 		
 		return avg+dt1*dt;
 	}

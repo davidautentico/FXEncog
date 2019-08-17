@@ -109,6 +109,7 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 		QuoteShort.getCalendar(cali, q);
 		int y = cali.get(Calendar.YEAR);
 		int h = cali.get(Calendar.HOUR_OF_DAY);
+		int min = cali.get(Calendar.MINUTE);
 		int day = cali.get(Calendar.DAY_OF_YEAR);
 				
 		values.add(q.getOpen5());
@@ -118,6 +119,7 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 		if (h<h1 || h>h2 
 				|| h==4
 				) return 0;
+		if (h==0 && min<15) return 0;
 		if (positions.size()>=maxPositions) return 0;
 					
 		//System.out.println("aaded: "+values.get(values.size()-1)+" "+values.size());
@@ -202,7 +204,7 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 		
 		//String pathEURUSD = path0+"EURUSD_1 Min_Bid_2009.01.01_2019.04.01.csv";
 		//String pathEURUSD = path0+"EURUSD_4 Hours_Bid_2003.12.31_2019.07.23.csv";
-		String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.08.06.csv";
+		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.08.06.csv";
 		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.04.06.csv";
 		String pathNews = path0+"News.csv";
 		
@@ -239,22 +241,24 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 			StratPerformance sp = new StratPerformance(); 
 			
 			//30min
-			//8 0.13 1.00 15 0 8 
+			//8 0.14 0.60 0.30 13 0 8 
+			//8 0.15 0.60 0.10 20 0 8 
+			//15
 			//18 0.14 1.00 13 0.15
 			for (int h1=0;h1<=0;h1++){
 				int h2 = h1+8;
-				for (int nbars=18;nbars<=18;nbars+=1){
-					for (double fdiff=0.10;fdiff<=0.10;fdiff+=0.01){
-						for (double fsl=1.00;fsl<=1.00;fsl+=0.05){	
-							double risk = 0.15;
-							for (int maxPositions=13;maxPositions<=13;maxPositions+=1){
-								for (int y1=2011;y1<=2011;y1++){
-									int y2 = y1+0;
+				for (int nbars=50;nbars<=50;nbars+=1){
+					for (double fdiff=0.17;fdiff<=0.17;fdiff+=0.01){
+						for (double fsl=0.60;fsl<=0.60;fsl+=0.05){	
+							double risk = 0.01;
+							for (int maxPositions=30;maxPositions<=30;maxPositions+=1){
+								for (int y1=2009;y1<=2009;y1++){
+									int y2 = y1+10;
 									for (int m1=0;m1<=0;m1+=1){
-										int m2 = m1+0;
+										int m2 = m1+11;
 										mm = new MeanRevertingSMA2();
 										sp = new StratPerformance();
-										sp.setInitialBalance(100000);
+										sp.setInitialBalance(10000);
 										
 										mm.setParameters(nbars,fdiff,fsl,0.0,risk,maxPositions,false,h1,h2);
 										
