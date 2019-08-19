@@ -212,10 +212,12 @@ public abstract class AlgoBasic {
 			if (true 
 					&& printOptions==0 
 					||
-					(factor>=30.0
-					&& perDays>=30.0 
+					(factor>=10.0
+					&& perDays>=25.0 
 					//&& pf>=1.40
-					&& var95<=10.0)
+					&& var95<=10.0 
+					&& var95>=9.0
+					)
 					)
 			System.out.println(
 					header
