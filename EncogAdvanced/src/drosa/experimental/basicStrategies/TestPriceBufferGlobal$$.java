@@ -493,7 +493,7 @@ public class TestPriceBufferGlobal$$ {
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_5 Secs_Bid_2012.01.01_2017.01.04.csv";
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_1 Min_Bid_2008.12.31_2017.02.13.csv";
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_1 Min_Bid_2003.05.04_2017.07.31.csv";
-		String pathEURUSD = "C:\\fxdata\\EURUSD_5 Mins_Bid_2004.01.01_2019.03.29.csv";
+		String pathEURUSD = "C:\\fxdata\\EURUSD_5 Mins_Bid_2004.01.01_2019.08.04.csv";
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_1 Min_Bid_2008.12.31_2018.01.04.csv";
 		
 		ArrayList<String> paths = new ArrayList<String>();
@@ -685,7 +685,7 @@ public class TestPriceBufferGlobal$$ {
 												for (double risk = 0.20;risk<=maxRisk;risk+=0.10){
 												//for (double risk = 1.0;risk<=1.0;risk+=0.01){
 												//for (double risk=6.5;risk<=6.5;risk+=0.25){
-													for (double comm=2.0;comm<=2.0;comm+=0.1){
+													for (double comm=1.75;comm<=1.75;comm+=0.1){
 														
 														String header = maxTrades+" "+PrintUtils.Print2dec(risk,false)+" || "+configs.get(h).toString();
 														
@@ -703,12 +703,12 @@ public class TestPriceBufferGlobal$$ {
 																	for (double aStd=0.0;aStd<=0.0;aStd+=1.0){
 																		for (int y1=2004;y1<=2019;y1+=1){
 																			int y2 = y1+0;
-																			for (int m1=0;m1<=0;m1+=3){
-																				int m2 = m1+11;
+																			for (int m1=0;m1<=8;m1+=4){
+																				int m2 = m1+3;
 																				String header1 = y1+" "+y2+" "+m1+" "+m2+" "+maxTrades
 																						+" "+PrintUtils.Print2dec(risk, false)
 																						;
-																				double pf = TestPriceBufferGlobal$$.doTest(header,dataNoise,maxMins,
+																				double pf = TestPriceBufferGlobal$$.doTest(header1,dataNoise,maxMins,
 																						y1,y2,m1,m2,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
 																						false,aStd,balance,risk,comm,false,true,0,dayTotalPips);
 																				if (pf>=1.00) totalPositives++;

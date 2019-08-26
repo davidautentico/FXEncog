@@ -2011,6 +2011,40 @@ public static ArrayList<QuoteShort> getDayDataShort(ArrayList<QuoteShort> dataSo
 		return qm;
 	}
 	
+	public static QuoteShort getMaxMinShortOpen(ArrayList<QuoteShort> data,QuoteShort qm,Calendar cal, int begin, int end) {
+		// TODO Auto-generated method stub
+		int actualMax = 0;
+		int actualMin = 300000;
+		int actualClose = 0;
+		if (begin<0) begin = 0;
+		if (end>data.size()-1) end =data.size()-1;
+		int highIdx = -1;
+		int lowIdx = -1;
+		//System.out.println(begin+" "+end);
+		for (int i = begin;i<=end;i++){
+			QuoteShort q = data.get(i);
+			if (q.getOpen5()>actualMax){
+				actualMax = q.getOpen5();
+				highIdx = i;
+			}
+			if (q.getOpen5()<actualMin){
+				actualMin = q.getOpen5();
+				lowIdx = i;
+			}
+			actualClose = q.getClose5();
+			QuoteShort.getCalendar(cal, q);
+		}
+
+		qm.setCal(cal);
+		qm.setHighIdx(highIdx);
+		qm.setLowIdx(lowIdx);
+		qm.setHigh5(actualMax);
+		qm.setLow5(actualMin);
+		qm.setClose5(actualClose);
+		
+		return qm;
+	}
+	
 	public static int getFirstTouch(ArrayList<QuoteShort> data,int begin, int end,int value) {
 
 		if (begin<1) begin = 1;
