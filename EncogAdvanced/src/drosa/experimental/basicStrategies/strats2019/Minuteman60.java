@@ -271,11 +271,11 @@ public class Minuteman60 extends AlgoBasic {
 				for (int h1=0;h1<=0;h1++){
 					int h2 = h1+23;
 					for (int lt=1000;lt<=1000;lt+=100){
-						for (int st=3;st<=120;st+=1){
-							for (double thrlt=0.20;thrlt<=0.80;thrlt+=0.05){
+						for (int st=14;st<=14;st+=1){
+							for (double thrlt=0.35;thrlt<=0.35;thrlt+=0.05){
 								for (double tpR=4.00;tpR<=4.0;tpR+=0.50){	
-									for (int y1=2004;y1<=2004;y1++){
-										int y2 = y1+15;
+									for (int y1=2004;y1<=2019;y1++){
+										int y2 = y1+0;
 										String header="";
 										
 										mm.setParameters(lt, st, thrlt, tpR,true,true,h1,h2);
