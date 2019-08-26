@@ -204,7 +204,7 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 		
 		//String pathEURUSD = path0+"EURUSD_1 Min_Bid_2009.01.01_2019.04.01.csv";
 		//String pathEURUSD = path0+"EURUSD_4 Hours_Bid_2003.12.31_2019.07.23.csv";
-		String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.08.06.csv";
+		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.08.06.csv";
 		//String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2009.01.01_2019.08.04.csv";
 		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.04.06.csv";
 		String pathNews = path0+"News.csv";
@@ -248,14 +248,14 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 			//18 0.14 1.00 13 0.15
 			for (int h1=0;h1<=0;h1++){
 				int h2 = h1+8;
-				for (int nbars=18;nbars<=18;nbars+=1){
-					for (double fdiff=0.16;fdiff<=0.16;fdiff+=0.01){
+				for (int nbars=50;nbars<=50;nbars+=1){
+					for (double fdiff=0.01;fdiff<=0.40;fdiff+=0.01){
 						for (double fsl=0.60;fsl<=0.60;fsl+=0.05){	
 							//double risk = 0.05;
-							for (double risk=0.10;risk<=0.10;risk+=0.01){
+							for (double risk=0.01;risk<=0.01;risk+=0.01){
 								for (int maxPositions=200;maxPositions<=200;maxPositions+=10){
-									for (int y1=2009;y1<=2019;y1++){
-										int y2 = y1+0;
+									for (int y1=2009;y1<=2009;y1++){
+										int y2 = y1+10;
 										for (int m1=0;m1<=0;m1+=1){
 											int m2 = m1+11;
 											mm = new MeanRevertingSMA2();
