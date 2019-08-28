@@ -43,7 +43,7 @@ public class Experiment4 {
 	 * @param fileNameTrainPro
 	 * @throws IOException 
 	 */
-	private static void doExtractXfromData4b(
+	private static void doExtractXfromData(
 			ArrayList<QuoteShort> data,
 			String fileName, 
 			ArrayList<Integer> maxMins, 
@@ -189,11 +189,11 @@ public class Experiment4 {
 	        	int pipsSL = factorSl*pipsTarget;
 	        	
 	        	//preprocesamiento calculando indicadores del dataset
-		  		doExtractXfromData4b(dataTrainRaw,fileNameTrainPro,maxMinsRaw,pipsTarget,pipsSL,limit,false);
-		  		doExtractXfromData4b(dataTrainTest,fileNameTestPro,maxMinsTest,pipsTarget,pipsSL,limit,false);
+		  		doExtractXfromData(dataTrainRaw,fileNameTrainPro,maxMinsRaw,pipsTarget,pipsSL,limit,false);
+		  		doExtractXfromData(dataTrainTest,fileNameTestPro,maxMinsTest,pipsTarget,pipsSL,limit,false);
 		  		
-		  		for (int numHiddenNodes = 15;numHiddenNodes<=15;numHiddenNodes+=1){
-		        	for (int numLayers =2;numLayers<=2;numLayers+=1){
+		  		for (int numHiddenNodes = 20;numHiddenNodes<=20;numHiddenNodes+=1){
+		        	for (int numLayers =3;numLayers<=3;numLayers+=1){
 		        		for (int batchSize=128;batchSize<=128;batchSize+=8){
 		        			for (int nEpochs=100;nEpochs<=100;nEpochs+=1){
 		        				for (double learningRate=0.02;learningRate<=0.02;learningRate+=0.010){		        					
