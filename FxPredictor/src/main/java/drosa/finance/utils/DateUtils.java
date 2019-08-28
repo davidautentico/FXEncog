@@ -1,7 +1,6 @@
 package drosa.finance.utils;
 
 import java.text.DateFormat;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -22,6 +21,41 @@ public class DateUtils {
 	public static final String FORMAT_YYYYMMDD = "yyyy-MM-dd";
 	
 
+	/**
+	 * Convierte
+	 * @param h
+	 * @return
+	 */
+	public static String getHourBinary(int h) {
+		// TODO Auto-generated method stub
+		String res = "0,0,0,0,0";
+		if (h==1) return "0,0,0,0,1";
+		if (h==2) return "0,0,0,1,0";
+		if (h==3) return "0,0,0,1,1";
+		if (h==4) return "0,0,1,0,0";
+		if (h==5) return "0,0,1,0,1";
+		if (h==6) return "0,0,1,1,0";
+		if (h==7) return "0,0,1,1,1";
+		if (h==8) return "0,1,0,0,0";
+		if (h==9) return "0,1,0,0,1";
+		if (h==10) return "0,1,0,1,0";
+		if (h==11) return "0,1,0,1,1";
+		if (h==12) return "0,1,1,0,0";
+		if (h==13) return "0,1,1,0,1";
+		if (h==14) return "0,1,1,1,0";
+		if (h==15) return "0,1,1,1,1";
+		if (h==16) return "1,0,0,0,0";
+		if (h==17) return "1,0,0,0,1";
+		if (h==18) return "1,0,0,1,0";
+		if (h==19) return "1,0,0,1,1";
+		if (h==20) return "1,0,1,0,0";
+		if (h==21) return "1,0,1,0,1";
+		if (h==22) return "1,0,1,1,0";
+		if (h==23) return "1,0,1,1,1";
+				
+		return res;
+	}
+	
 	public static boolean isDateEqual(GregorianCalendar gc1,GregorianCalendar gc2){
 		
 		if (gc1.get(Calendar.YEAR)==gc2.get(Calendar.YEAR)

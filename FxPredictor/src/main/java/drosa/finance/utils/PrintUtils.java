@@ -14,7 +14,11 @@ import java.util.List;
 public class PrintUtils {
 
 	
-	
+	public static String format(DecimalFormat f, double num) {
+        if (Double.isNaN(num) || Double.isInfinite(num))
+            return String.valueOf(num);
+        return f.format(num);
+    }
 	
 	public static String Print(double d) {
 			// TODO Auto-generated method stub		
