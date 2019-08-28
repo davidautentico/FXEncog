@@ -9,13 +9,25 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
+import org.deeplearning4j.earlystopping.EarlyStoppingModelSaver;
+import org.deeplearning4j.earlystopping.EarlyStoppingResult;
+import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.RegressionScoreCalculator;
+import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
+import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
+import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.RegressionEvaluation;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -24,6 +36,11 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
+//import org.deeplearning4j.ui.api.UIServer;
+//import org.deeplearning4j.ui.stats.StatsListener;
+//import org.deeplearning4j.ui.storage.FileStatsStorage;
+//import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 //import org.deeplearning4j.ui.api.UIServer;
 //import org.deeplearning4j.ui.stats.StatsListener;
 //import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
@@ -37,6 +54,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -66,7 +84,262 @@ public class FXPredictor {
 		return TradingUtils.cleanWeekendDataS(dataI);  		
 	}
 	
+	/**
+	 * Se extraen las características de los datos planos y la clase a la que pertenece cada vector input,
+	 * basandose en si se optienen pripero pipsTarget pips comprando o vendiendo
+	 * @param maxMins 
+	 * @param dataTrainRaw
+	 * @param fileNameTrainPro
+	 * @throws IOException 
+	 */
+	private static void doExtractXfromData4b(
+			ArrayList<QuoteShort> data,
+			String fileName, 
+			ArrayList<Integer> maxMins, 
+			int pipsTarget,int pipsSL,
+			int maxMinLimit,
+			boolean isSell) {
+		
+		FileWriter fstream;
+		try {
+			fstream = new FileWriter(fileName);
+			BufferedWriter out = new BufferedWriter(fstream);
+			
+			Calendar cal = Calendar.getInstance();
+			int atr20 = 600;
+			int high = -1;
+			int low = -1;
+			int lastHigh = -1;
+			int lastLow = -1;
+			int lastDay = -1;
+			
+			int wins = 0;
+			int losses = 0;
+			for (int i=20;i<data.size()-1;i++){
+				QuoteShort q = data.get(i);
+				QuoteShort.getCalendar(cal, q);
+				int h	= cal.get(Calendar.HOUR_OF_DAY);
+				int day = cal.get(Calendar.DAY_OF_YEAR);
+				int maxMin = maxMins.get(i);
+				
+				if (maxMin>=maxMinLimit) maxMin = maxMinLimit;
+				else if (maxMin<=-maxMinLimit) maxMin = -maxMinLimit;
+				
+				if (day!=lastDay){
+					if (lastDay!=-1){
+						lastHigh = high;
+						lastLow = low;
+					}
+					high = -1;
+					low = -1;
+					lastDay = day;
+				}
+				
+				
+				if (high==-1 || q.getOpen5()>=high) high = q.getOpen5();
+				if (low==-1 || q.getOpen5()<=low) low = q.getOpen5();
+		
+				
+				double sma30 =  MathUtils.average(data, i-30, i, false);
+				double diff30 = (int) (q.getOpen5()-sma30);
+				double sma50 =  MathUtils.average(data, i-50, i, false);
+				double diff50 = (int) (q.getOpen5()-sma50);
+				double sma120 =  MathUtils.average(data, i-120, i, false);
+				double diff120 = (int) (q.getOpen5()-sma120);
+				
+				//normalizamos..
+				diff30 = diff30/600;
+				diff50 = diff50/600;
+				diff120 = diff120/600;
+				
+				
+				String inputsDiff="";
+				for (int j=1;j<=20;j++){
+					double diff = (q.getOpen5()-data.get(i-j).getOpen5())/300;
+					inputsDiff += ","+diff; 
+				}
+				
+				int range = (high-low)/600;
 
+				int labelf			 	= 0;
+				int target	= q.getOpen5() + pipsTarget;
+				int stop 	= q.getOpen5() - pipsSL;
+				if (isSell){
+					 target	= q.getOpen5() - pipsTarget;
+					 stop 	= q.getOpen5() + pipsSL;
+				}
+				
+				for (int j=i+1;j<data.size();j++){
+					QuoteShort qj = data.get(j);
+					
+					if (!isSell){
+						if (qj.getOpen5()>=target){
+							labelf = 1;
+							break;
+						}else if (qj.getOpen5()<=stop){
+							labelf = 0;
+							break;
+						}
+					}else{
+						if (qj.getOpen5()<=target){
+							labelf = 1;
+							break;
+						}else if (qj.getOpen5()>=stop){
+							labelf = 0;
+							break;
+						}
+					}
+				}
+				
+				double maxMinThr		= maxMin*1.0 / maxMinLimit;	
+				String hourBinaryStr 	= getHourBinary(h);
+				String dataStr	 		= labelf
+						+","+maxMinThr// 1 representacion binaria de la hora del dia
+						+","+hourBinaryStr//5
+						+","+diff30//1
+						+","+diff50//1
+						+","+diff120//1
+						+","+range
+						+inputsDiff
+						;
+				//System.out.println(dataStr);
+				out.write(dataStr);
+				out.newLine();				
+			}
+			out.close();
+			
+			int totaltrades = wins+losses;
+			//System.out.println(totaltrades+" win% "+(wins*100.0/totaltrades));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.err.println("[doExtractXfromData] Error: " + e.getMessage());
+		}					
+}
+	
+
+	/**
+	 * Se extraen las características de los datos planos y la clase a la que pertenece cada vector input,
+	 * basandose en si se optienen pripero pipsTarget pips comprando o vendiendo
+	 * @param maxMins 
+	 * @param dataTrainRaw
+	 * @param fileNameTrainPro
+	 * @throws IOException 
+	 */
+	private static void doExtractXfromData4(
+			ArrayList<QuoteShort> data,
+			String fileName, 
+			ArrayList<Integer> maxMins, 
+			int pipsTarget,int pipsSL,
+			int maxMinLimit,
+			boolean isSell) {
+		
+		FileWriter fstream;
+		try {
+			fstream = new FileWriter(fileName);
+			BufferedWriter out = new BufferedWriter(fstream);
+			
+			Calendar cal = Calendar.getInstance();
+			int atr20 = 600;
+			int high = -1;
+			int low = -1;
+			int lastHigh = -1;
+			int lastLow = -1;
+			int lastDay = -1;
+			
+			int wins = 0;
+			int losses = 0;
+			for (int i=20;i<data.size()-1;i++){
+				QuoteShort q = data.get(i);
+				QuoteShort.getCalendar(cal, q);
+				int h	= cal.get(Calendar.HOUR_OF_DAY);
+				int day = cal.get(Calendar.DAY_OF_YEAR);
+				int maxMin = maxMins.get(i);
+				
+				if (maxMin>=maxMinLimit) maxMin = maxMinLimit;
+				else if (maxMin<=-maxMinLimit) maxMin = -maxMinLimit;
+				
+				if (day!=lastDay){
+					if (lastDay!=-1){
+						lastHigh = high;
+						lastLow = low;
+					}
+					high = -1;
+					low = -1;
+					lastDay = day;
+				}
+				
+				
+				if (high==-1 || q.getOpen5()>=high) high = q.getOpen5();
+				if (low==-1 || q.getOpen5()<=low) low = q.getOpen5();
+		
+				
+				double sma30 =  MathUtils.average(data, i-30, i, false);
+				double diff30 = (int) (q.getOpen5()-sma30);
+				double sma50 =  MathUtils.average(data, i-50, i, false);
+				double diff50 = (int) (q.getOpen5()-sma50);
+				double sma120 =  MathUtils.average(data, i-120, i, false);
+				double diff120 = (int) (q.getOpen5()-sma120);
+				
+				//normalizamos..
+				diff30 = diff30/600;
+				diff50 = diff50/600;
+				diff120 = diff120/600;
+				
+				int range = (high-low)/600;
+
+				int labelf			 	= 0;
+				int target	= q.getOpen5() + pipsTarget;
+				int stop 	= q.getOpen5() - pipsSL;
+				if (isSell){
+					 target	= q.getOpen5() - pipsTarget;
+					 stop 	= q.getOpen5() + pipsSL;
+				}
+				
+				for (int j=i+1;j<data.size();j++){
+					QuoteShort qj = data.get(j);
+					
+					if (!isSell){
+						if (qj.getOpen5()>=target){
+							labelf = 1;
+							break;
+						}else if (qj.getOpen5()<=stop){
+							labelf = 0;
+							break;
+						}
+					}else{
+						if (qj.getOpen5()<=target){
+							labelf = 1;
+							break;
+						}else if (qj.getOpen5()>=stop){
+							labelf = 0;
+							break;
+						}
+					}
+				}
+				
+				double maxMinThr		= maxMin*1.0 / maxMinLimit;	
+				String hourBinaryStr 	= getHourBinary(h);
+				String dataStr	 		= labelf
+						+","+maxMinThr// 1 representacion binaria de la hora del dia
+						+","+hourBinaryStr//5
+						+","+diff30//1
+						+","+diff50//1
+						+","+diff120//1
+						+","+range
+						;
+				//System.out.println(dataStr);
+				out.write(dataStr);
+				out.newLine();				
+			}
+			out.close();
+			
+			int totaltrades = wins+losses;
+			//System.out.println(totaltrades+" win% "+(wins*100.0/totaltrades));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.err.println("[doExtractXfromData] Error: " + e.getMessage());
+		}					
+}
 
 	
 	/**
@@ -268,6 +541,94 @@ public class FXPredictor {
 }
 	
 	/**
+	 * Se extraen las características de los datos planos y la clase a la que pertenece cada vector input,
+	 * basandose en si se optienen pripero pipsTarget pips comprando o vendiendo
+	 * @param maxMins 
+	 * @param dataTrainRaw
+	 * @param fileNameTrainPro
+	 * @throws IOException 
+	 */
+	private static void doExtractXfromData3(
+			ArrayList<QuoteShort> data,
+			String fileName) {
+		
+		FileWriter fstream;
+		try {
+			fstream = new FileWriter(fileName);
+			BufferedWriter out = new BufferedWriter(fstream);
+			
+			Calendar cal = Calendar.getInstance();
+			int atr20 = 600;
+			int high = -1;
+			int low = -1;
+			int lastHigh = -1;
+			int lastLow = -1;
+			int lastDay = -1;
+			
+			int wins = 0;
+			int losses = 0;
+			for (int i=20;i<data.size()-20;i++){
+				QuoteShort q = data.get(i);
+				QuoteShort.getCalendar(cal, q);
+				int h	= cal.get(Calendar.HOUR_OF_DAY);
+				int day = cal.get(Calendar.DAY_OF_YEAR);
+				
+				if (day!=lastDay){
+					if (lastDay!=-1){
+						lastHigh = high;
+						lastLow = low;
+					}
+					high = -1;
+					low = -1;
+					lastDay = day;
+				}
+				
+				//if (h==0) continue;
+				
+				int divisor = 200000;
+				double labelf = data.get(i+0).getOpen5()*1.0/divisor;//q.getOpen5()*1.0/divisor;	
+				String hourBinaryStr 	= getHourBinary(h);
+				String dataStr = labelf
+						+","+data.get(i-1).getOpen5()*1.0/divisor// 5 representacion binaria de la hora del dia
+						+","+data.get(i-2).getOpen5()*1.0/divisor//1
+						+","+data.get(i-3).getOpen5()*1.0/divisor//1
+						+","+data.get(i-4).getOpen5()*1.0/divisor//1
+						+","+data.get(i-5).getOpen5()*1.0/divisor//1
+						+","+data.get(i-6).getOpen5()*1.0/divisor// 5 representacion binaria de la hora del dia
+						+","+data.get(i-7).getOpen5()*1.0/divisor//1
+						+","+data.get(i-8).getOpen5()*1.0/divisor//1
+						+","+data.get(i-9).getOpen5()*1.0/divisor//1
+						+","+data.get(i-10).getOpen5()*1.0/divisor//1
+						+","+data.get(i-11).getOpen5()*1.0/divisor// 5 representacion binaria de la hora del dia
+						+","+data.get(i-12).getOpen5()*1.0/divisor//1
+						+","+data.get(i-13).getOpen5()*1.0/divisor//1
+						+","+data.get(i-14).getOpen5()*1.0/divisor//1
+						+","+data.get(i-15).getOpen5()*1.0/divisor//1
+						+","+data.get(i-16).getOpen5()*1.0/divisor// 5 representacion binaria de la hora del dia
+						+","+data.get(i-17).getOpen5()*1.0/divisor//1
+						+","+data.get(i-18).getOpen5()*1.0/divisor//1
+						+","+data.get(i-19).getOpen5()*1.0/divisor//1
+						+","+data.get(i-20).getOpen5()*1.0/divisor//1
+						+","+hourBinaryStr 
+						;
+				//System.out.println(dataStr);
+				out.write(dataStr);
+				out.newLine();				
+			}
+			out.close();
+			
+			int totaltrades = wins+losses;
+			//System.out.println(totaltrades+" win% "+(wins*100.0/totaltrades));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.err.println("[doExtractXfromData] Error: " + e.getMessage());
+		}
+		
+		
+		
+}
+	
+	/**
 	 * Convierte
 	 * @param h
 	 * @return
@@ -316,343 +677,156 @@ public class FXPredictor {
 			int numHiddenNodes, 
 			int numOutputs, 
 			int numLayers,
-			double learningRate
+			double learningRate,
+			double momentumRate,
+			Activation hiddenActivation,
+			Activation finalActivation,
+			LossFunction lossFunction
 			) {
 		
 		MultiLayerNetwork model = null;
 		MultiLayerConfiguration conf = null;
 		
+		
 		if (numLayers==1){
 			conf = new NeuralNetConfiguration.Builder()
-	        .seed(99975)
+	        .seed(123)
 	        .weightInit(WeightInit.XAVIER)
 	        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-	        .updater(new Nesterovs(learningRate, 0.9))
+	        .updater(new Nesterovs(learningRate, momentumRate))
 	        .list()
 	        .layer(new DenseLayer.Builder()
 	            .nIn(numInputs)
 	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
+	            .activation(hiddenActivation)
+	            .build())	         
+	        .layer(new OutputLayer.Builder(lossFunction)
 	            .nIn(numHiddenNodes)
 	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
+	            .activation(finalActivation)
 	            .build())
 	        .build();
-		}else if (numLayers==2){
+		}
+		
+		if (numLayers==2){
 			conf = new NeuralNetConfiguration.Builder()
 	        .seed(123)
 	        .weightInit(WeightInit.XAVIER)
 	        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-	        .updater(new Nesterovs(learningRate, 0.9))
+	        .updater(new Nesterovs(learningRate,momentumRate))
 	        .list()
 	        .layer(new DenseLayer.Builder()
 	            .nIn(numInputs)
 	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
+	            .activation(hiddenActivation)
 	            .build())
 	        .layer(new DenseLayer.Builder()
-	            .nIn(numHiddenNodes)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
-	            .nIn(numHiddenNodes)
-	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
-	            .build())
-	        .build();
-		}else if (numLayers==3){
-			conf = new NeuralNetConfiguration.Builder()
-	        .seed(123)
-	        .weightInit(WeightInit.XAVIER)
-	        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-	        .updater(new Nesterovs(learningRate, 0.9))
-	        .list()
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numInputs)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numHiddenNodes)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numHiddenNodes)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
-	            .nIn(numHiddenNodes)
-	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
-	            .build())
-	        .build();
-		}else if (numLayers==4){
-			conf = new NeuralNetConfiguration.Builder()
-	        .seed(123)
-	        .weightInit(WeightInit.XAVIER)
-	        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-	        .updater(new Nesterovs(learningRate, 0.9))
-	        .list()
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numInputs)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numHiddenNodes)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	         .layer(new DenseLayer.Builder()
-	            .nIn(numHiddenNodes)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numHiddenNodes)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
-	            .nIn(numHiddenNodes)
-	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
-	            .build())
-	        .build();
-		}else if (numLayers==5){
-			conf = new NeuralNetConfiguration.Builder()
-	        .seed(123)
-	        .weightInit(WeightInit.XAVIER)
-	        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-	        .updater(new Nesterovs(learningRate, 0.9))
-	        .list()
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numInputs)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numHiddenNodes)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	         .layer(new DenseLayer.Builder()
-	            .nIn(numHiddenNodes)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numHiddenNodes)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numHiddenNodes)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
-	            .nIn(numHiddenNodes)
-	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
-	            .build())
-	        .build();
-		}else if (numLayers==6){
-			conf = new NeuralNetConfiguration.Builder()
-	        .seed(123)
-	        .weightInit(WeightInit.XAVIER)
-	        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-	        .updater(new Nesterovs(learningRate, 0.9))
-	        .list()
-	        .layer(new DenseLayer.Builder()
-	            .nIn(numInputs)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())	        
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
-	            .nIn(numHiddenNodes)
-	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
-	            .build())
-	        .build();
-		}else if (numLayers==7){
-				conf = new NeuralNetConfiguration.Builder()
-		        .seed(123)
-		        .weightInit(WeightInit.XAVIER)
-		        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-		        .updater(new Nesterovs(learningRate, 0.9))
-		        .list()
-		        .layer(new DenseLayer.Builder()
-		            .nIn(numInputs)
-		            .nOut(numHiddenNodes)
-		            .activation(Activation.RELU)
-		            .build())
-		        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-		        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-		        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-		        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-		        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-		        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-		        .layer(new OutputLayer.Builder(LossFunction.XENT)
 		            .nIn(numHiddenNodes)
-		            .nOut(numOutputs)
-		            .activation(Activation.SIGMOID)
+		            .nOut(numHiddenNodes)
+		            .activation(hiddenActivation)
 		            .build())
-		        .build();
-		}else if (numLayers==8){
+	        .layer(new OutputLayer.Builder(lossFunction)
+	            .nIn(numHiddenNodes)
+	            .nOut(numOutputs)
+	            .activation(finalActivation)
+	            .build())
+	        .build();
+		}
+		if (numLayers==3){
 			conf = new NeuralNetConfiguration.Builder()
 	        .seed(123)
 	        .weightInit(WeightInit.XAVIER)
 	        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-	        .updater(new Nesterovs(learningRate, 0.9))
+	        .updater(new Nesterovs(learningRate,momentumRate))
 	        .list()
 	        .layer(new DenseLayer.Builder()
 	            .nIn(numInputs)
 	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
+	            .activation(hiddenActivation)
 	            .build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
+	        .layer(new DenseLayer.Builder()
+		            .nIn(numHiddenNodes)
+		            .nOut(numHiddenNodes)
+		            .activation(hiddenActivation)
+		            .build())
+	        .layer(new DenseLayer.Builder()
+		            .nIn(numHiddenNodes)
+		            .nOut(numHiddenNodes)
+		            .activation(hiddenActivation)
+		            .build())
+	        .layer(new OutputLayer.Builder(lossFunction)
 	            .nIn(numHiddenNodes)
 	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
+	            .activation(finalActivation)
 	            .build())
 	        .build();
-		}else if (numLayers==9){
+		}
+		if (numLayers==4){
 			conf = new NeuralNetConfiguration.Builder()
 	        .seed(123)
 	        .weightInit(WeightInit.XAVIER)
 	        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-	        .updater(new Nesterovs(learningRate, 0.9))
+	        .updater(new Nesterovs(learningRate,momentumRate))
 	        .list()
 	        .layer(new DenseLayer.Builder()
 	            .nIn(numInputs)
 	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
+	            .activation(hiddenActivation)
 	            .build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
+	        .layer(new DenseLayer.Builder()
+		            .nIn(numHiddenNodes)
+		            .nOut(numHiddenNodes)
+		            .activation(hiddenActivation)
+		            .build())
+	        .layer(new DenseLayer.Builder()
+		            .nIn(numHiddenNodes)
+		            .nOut(numHiddenNodes)
+		            .activation(hiddenActivation)
+		            .build())
+	        .layer(new OutputLayer.Builder(lossFunction)
 	            .nIn(numHiddenNodes)
 	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
+	            .activation(finalActivation)
 	            .build())
 	        .build();
-		}else if (numLayers==10){
+		}
+		
+		if (numLayers==5){
 			conf = new NeuralNetConfiguration.Builder()
 	        .seed(123)
 	        .weightInit(WeightInit.XAVIER)
 	        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-	        .updater(new Nesterovs(learningRate, 0.9))
+	        .updater(new Nesterovs(learningRate,momentumRate))
 	        .list()
 	        .layer(new DenseLayer.Builder()
 	            .nIn(numInputs)
 	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())	        
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
-	            .nIn(numHiddenNodes)
-	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
+	            .activation(hiddenActivation)
 	            .build())
-	        .build();
-		}else if (numLayers==15){
-			conf = new NeuralNetConfiguration.Builder()
-	        .seed(123)
-	        .weightInit(WeightInit.XAVIER)
-	        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-	        .updater(new Nesterovs(learningRate, 0.9))
-	        .list()
 	        .layer(new DenseLayer.Builder()
-	            .nIn(numInputs)
-	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
-	            .build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())	
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
 	            .nIn(numHiddenNodes)
-	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
+	            .nOut(numHiddenNodes)
+	            .activation(hiddenActivation)
 	            .build())
-	        .build();
-		}else if (numLayers==20){
-			conf = new NeuralNetConfiguration.Builder()
-	        .seed(123)
-	        .weightInit(WeightInit.XAVIER)
-	        .updater(new Nesterovs(learningRate, 0.9))
-	        .list()
+	         .layer(new DenseLayer.Builder()
+	            .nIn(numHiddenNodes)
+	            .nOut(numHiddenNodes)
+	            .activation(hiddenActivation)
+	            .build())
 	        .layer(new DenseLayer.Builder()
-	            .nIn(numInputs)
+	            .nIn(numHiddenNodes)
 	            .nOut(numHiddenNodes)
-	            .activation(Activation.RELU)
+	            .activation(hiddenActivation)
 	            .build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())
-	        .layer(new DenseLayer.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.RELU).build())	        
-	        .layer(new OutputLayer.Builder(LossFunction.XENT)
+	        .layer(new DenseLayer.Builder()
+	            .nIn(numHiddenNodes)
+	            .nOut(numHiddenNodes)
+	            .activation(hiddenActivation)
+	            .build())
+	        .layer(new OutputLayer.Builder(lossFunction)
 	            .nIn(numHiddenNodes)
 	            .nOut(numOutputs)
-	            .activation(Activation.SIGMOID)
+	            .activation(finalActivation)
 	            .build())
 	        .build();
 		}
@@ -677,43 +851,455 @@ public class FXPredictor {
 	            return String.valueOf(num);
 	        return f.format(num);
 	    }
+	 
+	 /**
+	  * Test de Regresion, intenta predecir el incremento 
+	  * @param fileNameTrainPro
+	  * @param fileNameTestPro
+	  * @param dataTrainRaw
+	  * @param dataTrainTest
+	  * @param maxMinsRaw
+	  * @param maxMinsTest
+	  * @throws IOException
+	  * @throws InterruptedException
+	  */
+	 public static void doTestAlgo2(
+			 String fileNameTrainPro,
+			 String fileNameTestPro,
+			 ArrayList<QuoteShort> dataTrainRaw,
+			 ArrayList<QuoteShort> dataTrainTest,
+			 ArrayList<Integer> maxMinsRaw,
+			 ArrayList<Integer> maxMinsTest
+			 ) throws IOException, InterruptedException{
+		
+		 DecimalFormat df = new DecimalFormat("0.0000"); 
+		 
+		int limit		= 500;
+		int numOutputs 	= 1;
+		int numInputs 	= 20;//4:10,4b:20
+		double momentumRate = 0.50;
+		
+		for (int pipsTarget = 300;pipsTarget<=500;pipsTarget+=50){ 
+        	for (int factorSl=1;factorSl<=1;factorSl+=1){
+	        	int pipsSL = factorSl*pipsTarget;
+	        	//preprocesamiento calculando indicadores del dataset
+		  		doExtractXfromData3(dataTrainRaw,fileNameTrainPro);
+		  		doExtractXfromData3(dataTrainTest,fileNameTestPro);
+		  		
+		  		for (int numHiddenNodes = 5;numHiddenNodes<=80;numHiddenNodes+=5){
+		        	for (int numLayers =1;numLayers<=1;numLayers+=1){
+		        		for (int batchSize=160;batchSize<=160;batchSize+=8){
+		        			for (int nEpochs=100;nEpochs<=100;nEpochs+=1){
+		        				for (double learningRate=0.01;learningRate<=0.01;learningRate+=0.010){		        					
+		        					for (int maxSeconds = 120;maxSeconds<=120;maxSeconds+=60){	
+		        						for (double stratThr=0.50;stratThr<=0.50;stratThr+=0.01){
+			        						//1.1) TRAIN
+									        RecordReader rr = new CSVRecordReader();
+									        rr.initialize(new FileSplit(new File(fileNameTrainPro)));
+									        DataSetIterator trainIter = new RecordReaderDataSetIterator(rr,batchSize,0,1);
+									        
+									        //1.2) TEST
+									        RecordReader rrTest = new CSVRecordReader();
+									        rrTest.initialize(new FileSplit(new File(fileNameTestPro)));
+									        DataSetIterator testIter = new RecordReaderDataSetIterator(rrTest,batchSize,0,1);
+									        
+									       //2) CONSTRUIMOS EL MODELO
+									        MultiLayerNetwork model = buildModel(numInputs,numHiddenNodes,
+									        		numOutputs,numLayers,learningRate,momentumRate,
+									        		Activation.SIGMOID,Activation.RELU,LossFunction.MEAN_ABSOLUTE_ERROR);			       
+									        model.init();
+									        
+									        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+									                .epochTerminationConditions(new MaxEpochsTerminationCondition(10000), 
+									                		new ScoreImprovementEpochTerminationCondition(5)) //Max of 50 epochs
+									                .evaluateEveryNEpochs(1)
+									                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(maxSeconds, TimeUnit.SECONDS)) //Max of 20 minutes
+									                .scoreCalculator(new DataSetLossCalculator(testIter, true))     //Calculate test set score
+									                //.scoreCalculator(new RegressionScoreCalculator(Metric.MSE, testIter))//para regresion
+									                .build();
+	
+									        EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,model,trainIter);
+	
+									        //Conduct early stopping training:
+									        EarlyStoppingResult result = trainer.fit();
+									        
+									        MultiLayerNetwork bestModel =(MultiLayerNetwork) result.getBestModel();
+									        
+									        if (result.getBestModelEpoch()<0) continue;
+									        
+										       int wins = 0;
+										        int losses = 0;
+										        testIter.reset();
+										        while(testIter.hasNext()){
+										            //DataSet t = testIter.next();
+										            DataSet t = testIter.next();
+										            
+										            INDArray features	= t.getFeatures();
+										            INDArray labels 	= t.getLabels();
+										            INDArray predicted	= bestModel.output(features,false);
+										            //comparar SIGNO predicho con signo real
+										            for (int b=1;b<=features.rows();b++){
+											            for (int l=1;l<=1;l++){
+											            	INDArray fr = features.getRow(b-1);
+											            	INDArray lr = labels.getRow(b-1);
+											            	INDArray pr = predicted.getRow(b-1);
+											            	
+											            	double realN_1		= fr.getDouble(0);
+											            	double realN 		= lr.getDouble(0);
+											            	double pred			= pr.getDouble(0);
+
+											            	if (pred>=realN_1){//predecimos que sube
+											            		if (realN>=realN_1){
+											            			wins++;
+											            		}else{
+											            			losses++;
+											            		}
+											            	}else{//predecimos que baja
+											            		if (realN<realN_1){
+											            			wins++;
+											            		}else{
+											            			losses++;
+											            		}
+											            	}									            										            	
+											            	//System.out.println(predInt+" "+realInt);
+											            }
+										            }
+										        }
+										        int trades = wins+losses;
+										        System.out.println(
+										        		pipsTarget+";"+pipsSL
+										        		+";"+numHiddenNodes+";"+numLayers+";"+batchSize
+										        		+";"+result.getTotalEpochs()
+										        		+";"+result.getBestModelEpoch()
+										        		+";"+format(df,result.getBestModelScore())
+										        		+";"+trades+";"+format(df,wins*100.0/trades)
+										        		+";"+format(df,wins*pipsTarget*1.0/(losses*pipsSL))
+										        		+";"+result.getTerminationReason()
+										        		);
+		        						}//stratTHR
+									        
+		        					}//maxSeconds
+		        				}//learningRate
+		        			}//nEpochs
+		        		}//batchsize
+		        	}//numLayers
+		  		}//numHiddem
+        	}//factor SL
+		}		
+	 }
+	 
+	 /**
+	  * Test de Regresion, obtencion del mismo signo con 20 precios anteriores y dia
+	  * @param fileNameTrainPro
+	  * @param fileNameTestPro
+	  * @param dataTrainRaw
+	  * @param dataTrainTest
+	  * @param maxMinsRaw
+	  * @param maxMinsTest
+	  * @throws IOException
+	  * @throws InterruptedException
+	  */
+	 public static void doTestAlgo3(
+			 String fileNameTrainPro,
+			 String fileNameTestPro,
+			 ArrayList<QuoteShort> dataTrainRaw,
+			 ArrayList<QuoteShort> dataTrainTest,
+			 ArrayList<Integer> maxMinsRaw,
+			 ArrayList<Integer> maxMinsTest
+			 ) throws IOException, InterruptedException{
+		
+		 DecimalFormat df = new DecimalFormat("0.0000"); 
+		 
+		int limit		= 500;
+		int numOutputs 	= 1;
+		int numInputs 	= 25;//4:10,4b:20
+		double momentumRate = 0.50;
+		
+		for (int pipsTarget = 50;pipsTarget<=300;pipsTarget+=50){ 
+        	for (int factorSl=1;factorSl<=1;factorSl+=1){
+	        	int pipsSL = factorSl*pipsTarget;
+	        	//preprocesamiento calculando indicadores del dataset
+		  		doExtractXfromData3(dataTrainRaw,fileNameTrainPro);
+		  		doExtractXfromData3(dataTrainTest,fileNameTestPro);
+		  		
+		  		for (int numHiddenNodes = 10;numHiddenNodes<=10;numHiddenNodes+=5){
+		        	for (int numLayers =5;numLayers<=5;numLayers+=1){
+		        		for (int batchSize=64;batchSize<=64;batchSize+=8){
+		        			for (int nEpochs=100;nEpochs<=100;nEpochs+=1){
+		        				for (double learningRate=0.01;learningRate<=0.01;learningRate+=0.01){		        					
+		        					for (int maxSeconds = 120;maxSeconds<=120;maxSeconds+=60){	
+		        						for (double stratThr=0.005;stratThr<=0.005;stratThr+=0.01){
+			        						//1.1) TRAIN
+									        RecordReader rr = new CSVRecordReader();
+									        rr.initialize(new FileSplit(new File(fileNameTrainPro)));
+									        DataSetIterator trainIter = new RecordReaderDataSetIterator(rr,batchSize,0,1);
+									        
+									        //1.2) TEST
+									        RecordReader rrTest = new CSVRecordReader();
+									        rrTest.initialize(new FileSplit(new File(fileNameTestPro)));
+									        DataSetIterator testIter = new RecordReaderDataSetIterator(rrTest,batchSize,0,1);
+									        
+									       //2) CONSTRUIMOS EL MODELO
+									        MultiLayerNetwork model = buildModel(numInputs,numHiddenNodes,
+									        		numOutputs,numLayers,learningRate,momentumRate,
+									        		Activation.SIGMOID,Activation.RELU,LossFunction.MSE);			       
+									        model.init();
+									        
+									        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+									                .epochTerminationConditions(new MaxEpochsTerminationCondition(10000), 
+									                		new ScoreImprovementEpochTerminationCondition(5)) //Max of 50 epochs
+									                .evaluateEveryNEpochs(1)
+									                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(maxSeconds, TimeUnit.SECONDS)) //Max of 20 minutes
+									                .scoreCalculator(new DataSetLossCalculator(testIter, true))     //Calculate test set score
+									                //.scoreCalculator(new RegressionScoreCalculator(Metric.MSE, testIter))//para regresion
+									                .build();
+	
+									        EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,model,trainIter);
+	
+									        //Conduct early stopping training:
+									        EarlyStoppingResult result = trainer.fit();
+									        
+									        MultiLayerNetwork bestModel =(MultiLayerNetwork) result.getBestModel();
+									        
+									        if (result.getBestModelEpoch()<0) continue;
+									        
+										       int wins = 0;
+										        int losses = 0;
+										        testIter.reset();
+										        while(testIter.hasNext()){
+										            //DataSet t = testIter.next();
+										            DataSet t = testIter.next();
+										            
+										            INDArray features	= t.getFeatures();
+										            INDArray labels 	= t.getLabels();
+										            INDArray predicted	= bestModel.output(features,false);
+										            //comparar SIGNO predicho con signo real
+										            for (int b=1;b<=features.rows();b++){
+											            for (int l=1;l<=1;l++){
+											            	INDArray fr = features.getRow(b-1);
+											            	INDArray lr = labels.getRow(b-1);
+											            	INDArray pr = predicted.getRow(b-1);
+											            	
+											            	double realN_1		= fr.getDouble(0);
+											            	double realN 		= lr.getDouble(0);
+											            	double pred			= pr.getDouble(0);
+
+											            	if (pred>=realN_1){//predecimos que sube
+											            		if (realN>=realN_1){
+											            			wins++;
+											            		}else{
+											            			losses++;
+											            		}
+											            	}else{//predecimos que baja
+											            		if (realN<realN_1){
+											            			wins++;
+											            		}else{
+											            			losses++;
+											            		}
+											            	}									            										            	
+											            	//System.out.println(predInt+" "+realInt);
+											            }
+										            }
+										        }
+										        int trades = wins+losses;
+										        System.out.println(
+										        		pipsTarget+";"+pipsSL
+										        		+";"+numHiddenNodes+";"+numLayers+";"+batchSize
+										        		+";"+result.getTotalEpochs()
+										        		+";"+result.getBestModelEpoch()
+										        		+";"+format(df,result.getBestModelScore())
+										        		+";"+trades+";"+format(df,wins*100.0/trades)
+										        		+";"+format(df,wins*pipsTarget*1.0/(losses*pipsSL))
+										        		+";"+result.getTerminationReason()
+										        		);
+		        						}//stratTHR
+									        
+		        					}//maxSeconds
+		        				}//learningRate
+		        			}//nEpochs
+		        		}//batchsize
+		        	}//numLayers
+		  		}//numHiddem
+        	}//factor SL
+		}		
+	 }
+	 
+	 /**
+	  * Classification Test. 1: se alcanza el objetivo de compra o venta. 0 : no se alcanza el objetivo
+	  * @param fileNameTrainPro
+	  * @param fileNameTestPro
+	  * @param dataTrainRaw
+	  * @param dataTrainTest
+	  * @param maxMinsRaw
+	  * @param maxMinsTest
+	  * @throws IOException
+	  * @throws InterruptedException
+	  */
+	 public static void doTestAlgo4(
+			 String fileNameTrainPro,
+			 String fileNameTestPro,
+			 ArrayList<QuoteShort> dataTrainRaw,
+			 ArrayList<QuoteShort> dataTrainTest,
+			 ArrayList<Integer> maxMinsRaw,
+			 ArrayList<Integer> maxMinsTest
+			 ) throws IOException, InterruptedException{
+		
+		 DecimalFormat df = new DecimalFormat("0.0000"); 
+		 
+		int limit		= 500;
+		int numOutputs 	= 1;
+		int numInputs 	= 30;//4:10,4b:20
+		double momentumRate = 0.50;
+		
+		for (int pipsTarget = 50;pipsTarget<=1000;pipsTarget+=50){ 
+        	for (int factorSl=1;factorSl<=1;factorSl+=1){
+	        	int pipsSL = factorSl*pipsTarget;
+	        	
+	        	//preprocesamiento calculando indicadores del dataset
+		  		doExtractXfromData4b(dataTrainRaw,fileNameTrainPro,maxMinsRaw,pipsTarget,pipsSL,limit,false);
+		  		doExtractXfromData4b(dataTrainTest,fileNameTestPro,maxMinsTest,pipsTarget,pipsSL,limit,false);
+		  		
+		  		for (int numHiddenNodes = 15;numHiddenNodes<=15;numHiddenNodes+=1){
+		        	for (int numLayers =2;numLayers<=2;numLayers+=1){
+		        		for (int batchSize=128;batchSize<=128;batchSize+=8){
+		        			for (int nEpochs=100;nEpochs<=100;nEpochs+=1){
+		        				for (double learningRate=0.02;learningRate<=0.02;learningRate+=0.010){		        					
+		        					for (int maxSeconds = 240;maxSeconds<=240;maxSeconds+=60){	
+		        						for (double stratThr=0.50;stratThr<=0.50;stratThr+=0.01){
+			        						//1.1) TRAIN
+									        RecordReader rr = new CSVRecordReader();
+									        rr.initialize(new FileSplit(new File(fileNameTrainPro)));
+									        DataSetIterator trainIter = new RecordReaderDataSetIterator(rr,batchSize,0,1);
+									        
+									        //1.2) TEST
+									        RecordReader rrTest = new CSVRecordReader();
+									        rrTest.initialize(new FileSplit(new File(fileNameTestPro)));
+									        DataSetIterator testIter = new RecordReaderDataSetIterator(rrTest,batchSize,0,1);
+									        
+									       //2) CONSTRUIMOS EL MODELO
+									        MultiLayerNetwork model = buildModel(numInputs,numHiddenNodes,
+									        		numOutputs,numLayers,learningRate,momentumRate,
+									        		Activation.RELU,Activation.SIGMOID,LossFunction.XENT);			       
+									        model.init();
+									        
+									        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
+									                .epochTerminationConditions(new MaxEpochsTerminationCondition(10000), 
+									                		new ScoreImprovementEpochTerminationCondition(5)) //Max of 50 epochs
+									                .evaluateEveryNEpochs(1)
+									                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(maxSeconds, TimeUnit.SECONDS)) //Max of 20 minutes
+									                .scoreCalculator(new DataSetLossCalculator(testIter, true))     //Calculate test set score
+									                //.scoreCalculator(new RegressionScoreCalculator(Metric.MSE, testIter))//para regresion
+									                .build();
+	
+									        EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,model,trainIter);
+	
+									        //Conduct early stopping training:
+									        EarlyStoppingResult result = trainer.fit();
+									       // System.out.println("Termination reason: " + result.getTerminationReason());
+									      //  System.out.println("Termination details: " + result.getTerminationDetails());
+									        //System.out.println("Total epochs: " + result.getTotalEpochs());
+									        //System.out.println("Best epoch number: " + result.getBestModelEpoch());
+									        //System.out.println("Score at best epoch: " + result.getBestModelScore());
+									        
+									        MultiLayerNetwork bestModel =(MultiLayerNetwork) result.getBestModel();
+									        
+									        if (result.getBestModelEpoch()<0) continue;
+									        
+										       int wins = 0;
+										        int losses = 0;
+										        testIter.reset();
+										        while(testIter.hasNext()){
+										            //DataSet t = testIter.next();
+										            DataSet t = testIter.next();
+										            
+										            INDArray features	= t.getFeatures();
+										            INDArray labels 	= t.getLabels();
+										            INDArray predicted	= bestModel.output(features,false);
+										            //comparar SIGNO predicho con signo real
+										            for (int b=1;b<=features.rows();b++){
+											            for (int l=1;l<=1;l++){
+											            	INDArray fr = features.getRow(b-1);
+											            	INDArray lr = labels.getRow(b-1);
+											            	INDArray pr = predicted.getRow(b-1);
+											            	
+											            	double realN_1		= fr.getDouble(0);
+											            	double realN 		= lr.getDouble(0);
+											            	double pred			= pr.getDouble(0);
+											            	
+											            	int realInt = (int) lr.getDouble(0);
+											            	int predInt = 0;
+											            	if (pred>stratThr) predInt = 1;
+											            	
+											            	if (predInt==1){
+											            		if (predInt == realInt){
+											            			wins++;
+											            		}else{
+											            			losses++;
+											            		}
+											            	}									            										            	
+											            	//System.out.println(predInt+" "+realInt);
+											            }
+										            }
+										        }
+										        int trades = wins+losses;
+										        System.out.println(
+										        		pipsTarget+";"+pipsSL
+										        		+";"+numHiddenNodes+";"+numLayers+";"+batchSize
+										        		+";"+stratThr
+										        		+";"+result.getTotalEpochs()
+										        		+";"+result.getBestModelEpoch()
+										        		+";"+format(df,result.getBestModelScore())
+										        		+";"+trades+";"+format(df,wins*100.0/trades)
+										        		+";"+format(df,wins*pipsTarget*1.0/(losses*pipsSL))
+										        		+";"+result.getTerminationReason()
+										        		);
+		        						}//stratTHR
+									        
+		        					}//maxSeconds
+		        				}//learningRate
+		        			}//nEpochs
+		        		}//batchsize
+		        	}//numLayers
+		  		}//numHiddem
+        	}//factor SL
+		}		
+	 }
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		
 		 //Initialize the user interface backend
-	  //UIServer uiServer = UIServer.getInstance();
+	 // UIServer uiServer = UIServer.getInstance();
 	    //Configure where the network information (gradients, score vs. time etc) is to be stored. Here: store in memory.
-	  //StatsStorage statsStorage = new InMemoryStatsStorage();         //Alternative: new FileStatsStorage(File), for saving and loading later
+	 // StatsStorage statsStorage = new InMemoryStatsStorage();         //Alternative: new FileStatsStorage(File), for saving and loading later
+	  //Configure where the network information (gradients, activations, score vs. time etc) is to be stored
+      //Then add the StatsListener to collect this information from the network, as it trains
+      //StatsStorage statsStorage = new FileStatsStorage(new File(System.getProperty("java.io.tmpdir"), "ui-stats.dl4j"));
+      //int listenerFrequency = 1;
+	  
 	    //Attach the StatsStorage instance to the UI: this allows the contents of the StatsStorage to be visualized
 	   //uiServer.attach(statsStorage);
+	   //setListeners(new StatsListener(statsStorage, listenerFrequency));
 		
 		//CudaEnvironment.getInstance().getConfiguration().allowMultiGPU(true);
 		
 		//lectura de datos financieros
 		//habra que partir los datos en varios años para probar
 		
-		//5min
-		//String fileNameTrainRaw5	= "C:\\fxdata\\EURUSD_5 Mins_Bid_2009.01.01_2017.12.31.csv";
-		//String fileNameTestRaw5		= "C:\\fxdata\\EURUSD_5 Mins_Bid_2018.01.01_2019.08.25.csv";
-		//String fileNameTrainPro5 	= "C:\\fxdata\\EURUSD_5 Mins_Bid_2009.01.01_2017.12.31_pro.csv";
-		//String fileNameTestPro5  	= "C:\\fxdata\\EURUSD_5 Mins_Bid_2018.01.01_2019.08.25_pro.csv";
-		
-		String fileNameTrainRaw5	= "C:\\fxdata\\EURUSD_5 Mins_Bid_2017.01.01_2019.02.28.csv";
-		String fileNameTestRaw5		= "C:\\fxdata\\EURUSD_5 Mins_Bid_2019.03.01_2019.08.25.csv";
-		String fileNameTrainPro5 	= "C:\\fxdata\\EURUSD_5 Mins_Bid_2017.01.01_2019.02.28_pro.csv";
-		String fileNameTestPro5  	= "C:\\fxdata\\EURUSD_5 Mins_Bid_2019.03.01_2019.08.25_pro.csv";
-		
 		//15min
-		//String fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2017.01.01_2019.02.28.csv";
-		//String fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.03.01_2019.08.25.csv";
-		//String fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2017.01.01_2018.02.28_pro.csv";
-		//String fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.03.01_2019.08.25_pro.csv";
+		/*String fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2017.01.01_2019.02.28.csv";
+		String fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.03.01_2019.08.25.csv";
+		String fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2017.01.01_2019.02.28_pro.csv";
+		String fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.03.01_2019.08.25_pro.csv";*/
 		
-		//15min
-		String fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2018.12.31.csv";
-		String fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.01.01_2019.08.25.csv";
-		String fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2018.12.31_pro.csv";
-		String fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.01.01_2019.08.25_pro.csv";
+		//String fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2018.12.31.csv";
+		//String fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.01.01_2019.08.25.csv";
+		//String fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2018.12.31_pro.csv";
+		//String fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.01.01_2019.08.25_pro.csv";
+		
+		String fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2014.12.31.csv";
+		String fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2015.01.01_2015.12.31.csv";
+		String fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2014.12.31_pro.csv";
+		String fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2015.01.01_2015.12.31_pro.csv";
 				
 		boolean is15m = true;
 		
@@ -721,145 +1307,48 @@ public class FXPredictor {
 		String fileNameTestRaw	= fileNameTestRaw15;
 		String fileNameTrainPro = fileNameTrainPro15;
 		String fileNameTestPro  = fileNameTestPro15;
-		
-		if (!is15m){
-			fileNameTrainRaw	= fileNameTrainRaw5;
-			fileNameTestRaw	= fileNameTestRaw5;
-			fileNameTrainPro = fileNameTrainPro5;
-			fileNameTestPro  = fileNameTestPro5;
-		}
-		
-		ArrayList<QuoteShort> dataTrainRaw = new ArrayList<QuoteShort>();
-		ArrayList<QuoteShort> dataTrainTest = new ArrayList<QuoteShort>();
-		
-		dataTrainRaw	= readData(fileNameTrainRaw);
-		dataTrainTest 	= readData(fileNameTestRaw);
-		
-		ArrayList<Integer> maxMinsRaw = TradingUtils.calculateMaxMinByBarShortAbsoluteInt(dataTrainRaw);
-		ArrayList<Integer> maxMinsTest = TradingUtils.calculateMaxMinByBarShortAbsoluteInt(dataTrainRaw);
-		
-		System.out.println("Leido raw data,tamaños datos leidos: "+dataTrainRaw.size()+" "+dataTrainTest.size());
-				
-				
-		//hiperparámetros
-		int seed			= 123;
-        double learningRate	= 0.010;
-        int batchSize 		= 3;
-        int nEpochs 		= 5;
-        int numInputs 		= 14;
-        int numOutputs 		= 1;
-        int numHiddenNodes 	= 5;
-        int pipsTarget		= 500;
-        
-        //si el batchsize es grande.. entonces se necesitan mas epochs para 
-        //en cambio con un batchsize mas pequeño, se necesitan menos epochs..
-        
-        //tablas : 
-        //hiddenNodes-accuracy, probar caso de 1 layer
-        //numLayers-accuracy
-        
-        for (pipsTarget = 150;pipsTarget<=150;pipsTarget+=50){ 
-        	for (int factorSl=3;factorSl<=3;factorSl+=1){
-	        	int pipsSL = factorSl*pipsTarget;
-	        	for (int maxMinThr1=700;maxMinThr1<=700;maxMinThr1+=50){  
-		        	 //preprocesamiento calculando indicadores del dataset
-			  		doExtractXfromData2(dataTrainRaw,fileNameTrainPro,maxMinsRaw,pipsTarget,pipsSL,maxMinThr1,true);
-			  		doExtractXfromData2(dataTrainTest,fileNameTestPro,maxMinsTest,pipsTarget,pipsSL,maxMinThr1,true);
-			  			  		
-		        	for (numHiddenNodes = 10;numHiddenNodes<=10;numHiddenNodes+=5){
-			        	for (int numLayers = 10;numLayers<=10;numLayers+=1){
-			        		for (batchSize=32;batchSize<=256;batchSize+=32){
-			        			for (nEpochs=1;nEpochs<=1;nEpochs+=1){
-			        				for (learningRate=0.010;learningRate<=0.010;learningRate+=0.010){
-								       
-										//1) obtenemos los dataset de los datos preprocesados	
-								        //1.1) TRAIN
-								        RecordReader rr = new CSVRecordReader();
-								        rr.initialize(new FileSplit(new File(fileNameTrainPro)));
-								        DataSetIterator trainIter = new RecordReaderDataSetIterator(rr,batchSize,0,1);
-								        
-								        //1.2) TEST
-								        RecordReader rrTest = new CSVRecordReader();
-								        rrTest.initialize(new FileSplit(new File(fileNameTestPro)));
-								        DataSetIterator testIter = new RecordReaderDataSetIterator(rrTest,batchSize,0,1);
-								        
-								        //Normalize the training data
-								        DataNormalization normalizer = new NormalizerStandardize();
-								        normalizer.fit(trainIter);              //Collect training data statistics
-								        trainIter.reset();
-								        //Use previously collected statistics to normalize on-the-fly. Each DataSet returned by 'trainData' iterator will be normalized
-								        trainIter.setPreProcessor(normalizer);
-								        
-								      //Normalize the training data
-								       // DataNormalization normalizer = new NormalizerStandardize();
-								        normalizer.fit(testIter);              //Collect training data statistics
-								        testIter.reset();
-								        //Use previously collected statistics to normalize on-the-fly. Each DataSet returned by 'trainData' iterator will be normalized
-								        testIter.setPreProcessor(normalizer);
-								        
-								        //2) CONSTRUIMOS EL MODELO
-								        MultiLayerNetwork model = buildModel(numInputs,numHiddenNodes,numOutputs,numLayers,learningRate);			       
-								        model.init();
-								        
-								      // model.setListeners(new StatsListener(statsStorage));
-									
-								        //3) APLICAMOS MODELO AL CONJUNTO DE ENTRENAMIENTO
-								        for ( int n = 0; n < nEpochs; n++) {
-								        	//System.out.println("Epoch.."+n);
-								            model.fit(trainIter);
-								        }
-											
-								       // System.out.println("Evaluate model....");
-								        Evaluation eval = new Evaluation(numOutputs);
-								        while(testIter.hasNext()){
-								            DataSet t = testIter.next();
-								            INDArray features = t.getFeatures();
-								            INDArray labels = t.getLabels();
-								            INDArray predicted = model.output(features,false);
-								            eval.eval(labels, predicted);
-								        }
-											      
-								        //Print the evaluation statistics
-								        //System.out.println(eval.stats());
-									        
-								        int tp = (int) eval.getTruePositives().getCount(1);
-								        int tn = (int) eval.getTrueNegatives().getCount(1);
-								        int fp = (int) eval.getFalsePositives().getCount(1);
-								        int fn = (int) eval.getFalseNegatives().getCount(1);
-								        
-								       // int totalLabels = eval.get       
-								        
-								        double precision = tp*1.0/(tp+fp);
-								        double accuracy = (tp+tn)*1.0/(tp+tn+fp+fn); 
-								        double recall = tp*1.0/(tp+fn); 
-								        double f1Score = (2.0*(precision*recall))/(precision+recall);
-								        double pf = accuracy*pipsTarget*1.0/((1.0-accuracy)*pipsSL);
-								        
-								        DecimalFormat df = new DecimalFormat("0.0000");
-								        System.out.println(
-								        			pipsTarget+";"+pipsSL
-								        			+";"+maxMinThr1
-								        			+";"+nEpochs+";"+batchSize
-								        			+";"+numHiddenNodes+";"+numLayers							        			
-								        			//+";"+tp+";"+fp+";"+tn+";"+fn
-								        			+";"+format(df, accuracy*100.0)
-								        			+";"+format(df, pf)
-								        			//+";"+format(df, pf)
-								        			//+" || "+format(df, pipsTarget*tp*1.0/(pipsSL*fp))
-								        			//+" || "+format(df, model.score())
-								        			);
-			        				}//learningRate
-			        			}//nEpochs
-			        		}//batchSize			        
-			        	}//numLayers
-		        	}//numHiddenNodes
-	        	}//maxMinThr1
-        	}//factorSl
-        }
-    
 
 		
+		ArrayList<QuoteShort> dataTrainRaw = new ArrayList<QuoteShort>();
+		ArrayList<QuoteShort> dataTestRaw = new ArrayList<QuoteShort>();
+		
+		dataTrainRaw	= readData(fileNameTrainRaw);
+		dataTestRaw 	= readData(fileNameTestRaw);
+		
+		ArrayList<Integer> maxMinsRaw = TradingUtils.calculateMaxMinByBarShortAbsoluteInt(dataTrainRaw);
+		ArrayList<Integer> maxMinsTest = TradingUtils.calculateMaxMinByBarShortAbsoluteInt(dataTestRaw);
+		
+		System.out.println("Leido raw data,tamaños datos leidos: "+dataTrainRaw.size()+" "+dataTestRaw.size());
+				
+		//regresion
+		//doTestAlgo3(fileNameTrainPro,fileNameTestPro,dataTrainRaw,dataTestRaw,maxMinsRaw,maxMinsTest);
+		//clasificacion
+		doTestAlgo4(fileNameTrainPro,fileNameTestPro,dataTrainRaw,dataTestRaw,maxMinsRaw,maxMinsTest);
+		
+  
+		
 		System.out.println("Programa finalizado");
+	}
+
+
+
+	private static void doNormalize(DataSetIterator trainIter, DataSetIterator testIter) {
+		 //Normalize the training data
+        //DataNormalization normalizer = new NormalizerStandardize();
+        DataNormalization normalizer = new NormalizerMinMaxScaler(0,1);
+        normalizer.fit(trainIter);              //Collect training data statistics
+        trainIter.reset();
+        //Use previously collected statistics to normalize on-the-fly. Each DataSet returned by 'trainData' iterator will be normalized
+        trainIter.setPreProcessor(normalizer);
+        
+      //Normalize the training data
+       // DataNormalization normalizer = new NormalizerStandardize();
+        DataNormalization normalizer2 = new NormalizerMinMaxScaler(0,1);
+        normalizer2.fit(testIter);              //Collect training data statistics
+        testIter.reset();
+        //Use previously collected statistics to normalize on-the-fly. Each DataSet returned by 'trainData' iterator will be normalized
+        testIter.setPreProcessor(normalizer2);
+		
 	}
 
 	
