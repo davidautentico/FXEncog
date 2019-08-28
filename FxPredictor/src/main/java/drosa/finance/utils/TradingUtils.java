@@ -1815,6 +1815,74 @@ public static ArrayList<QuoteShort> getDayDataShort(ArrayList<QuoteShort> dataSo
 		}
 		return maxMins;
 	}
+	
+	public static ArrayList<Integer> calculateMaxMinByBarShortAbsoluteIntLimit(
+			ArrayList<QuoteShort> data,int limit) {
+		
+		int count5000 = 0;
+		ArrayList<Integer> maxMins = new ArrayList<Integer>();
+		for (int i=0;i<data.size();i++){
+			QuoteShort q = data.get(i);
+			int maxMin = 0;
+			//maxMin.setExtra(0);
+			int modeH = 0;
+			int modeL = 0;
+			int nbarsH = 0;
+			int nbarsL = 0;
+			if (i%20000==0){
+				//System.out.println("calculados "+i);
+			}
+			//QuoteShort qmax = TradingUtils.getMaxMinShort(data, i-170000, i-1);
+			for (int j=i-1;j>=0;j--){
+				QuoteShort qj = data.get(j);
+				boolean isHigh = false;
+				boolean isLow = false;
+				
+				if (q.getHigh5()>qj.getHigh5()){
+					isHigh = true;
+				}
+				if (q.getLow5()<qj.getLow5()){
+					isLow = true;
+				}
+				
+				//System.out.println();
+				
+				if (modeH==0 || modeH==1){
+					if (isHigh){
+						modeH=1;
+						nbarsH++;
+					}else{
+						modeH=-1;
+					}
+				}
+				if (modeL==0 || modeL==1){
+					if (isLow){
+						modeL=1;
+						nbarsL++;
+					}else{
+						modeL=-1;
+					}
+				}
+				
+				if (!isHigh) modeH = -1;
+				if (!isLow)  modeL = -1;
+				
+				if (!isHigh && !isLow) break;
+				if (modeH==-1 && modeL==-1) break;
+			}
+			if (Math.abs(nbarsH)>=5000 || Math.abs(nbarsL)>=5000){
+				count5000++;
+				//System.out.println("a�adiendo nbars: "+nbarsH+" "+nbarsL+" "+count5000);
+			}
+			if (nbarsH>=nbarsL) maxMin=nbarsH;
+			if (nbarsH<nbarsL) maxMin=-nbarsL;
+			
+			if (maxMin>=limit) maxMin = limit;
+			if (maxMin<=limit) maxMin = limit;
+			maxMins.add(maxMin);
+		}
+		return maxMins;
+	}
 
 	public static ArrayList<Integer> decodeHours(String hours) {
 
