@@ -8,6 +8,9 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
@@ -182,6 +185,25 @@ public class ModelHelper {
 		model = new MultiLayerNetwork(conf);
 		
 		return model;
+	}
+	
+	public static void doNormalize(DataSetIterator trainIter, DataSetIterator testIter) {
+		 //Normalize the training data
+       //DataNormalization normalizer = new NormalizerStandardize();
+       DataNormalization normalizer = new NormalizerMinMaxScaler(0,1);
+       normalizer.fit(trainIter);              //Collect training data statistics
+       trainIter.reset();
+       //Use previously collected statistics to normalize on-the-fly. Each DataSet returned by 'trainData' iterator will be normalized
+       trainIter.setPreProcessor(normalizer);
+       
+     //Normalize the training data
+      // DataNormalization normalizer = new NormalizerStandardize();
+       DataNormalization normalizer2 = new NormalizerMinMaxScaler(0,1);
+       normalizer2.fit(testIter);              //Collect training data statistics
+       testIter.reset();
+       //Use previously collected statistics to normalize on-the-fly. Each DataSet returned by 'trainData' iterator will be normalized
+       testIter.setPreProcessor(normalizer2);
+		
 	}
 
 }

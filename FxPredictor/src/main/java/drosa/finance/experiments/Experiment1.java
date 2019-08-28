@@ -238,7 +238,7 @@ public class Experiment1 {
 		int numInputs 	= 30;//4:10,4b:20
 		double momentumRate = 0.50;
 		
-		for (int pipsTarget = 50;pipsTarget<=1000;pipsTarget+=50){ 
+		for (int pipsTarget = 100;pipsTarget<=100;pipsTarget+=50){ 
 	       	for (int factorSl=1;factorSl<=1;factorSl+=1){
 		        	int pipsSL = factorSl*pipsTarget;
 		        	for (int maxMinThr1=100;maxMinThr1<=100;maxMinThr1+=1){ 
@@ -247,7 +247,7 @@ public class Experiment1 {
 				  		doExtractXfromData2(dataTrainTest,fileNameTestPro,maxMinsTest,pipsTarget,pipsSL,maxMinThr1,true);
 				  		
 				  		for (int numHiddenNodes = 10;numHiddenNodes<=10;numHiddenNodes+=1){
-				        	for (int numLayers =5;numLayers<=5;numLayers+=1){
+				        	for (int numLayers =1;numLayers<=1;numLayers+=1){
 				        		for (int batchSize=64;batchSize<=64;batchSize+=8){
 				        			for (int nEpochs=100;nEpochs<=100;nEpochs+=1){
 				        				for (double learningRate=0.01;learningRate<=0.01;learningRate+=0.010){		        					
