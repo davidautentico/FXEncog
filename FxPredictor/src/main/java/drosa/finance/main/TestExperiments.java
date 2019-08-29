@@ -9,7 +9,11 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
 
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
@@ -36,6 +40,8 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 //import org.deeplearning4j.ui.api.UIServer;
 //import org.deeplearning4j.ui.stats.StatsListener;
@@ -58,11 +64,13 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.slf4j.Logger;
 
 import drosa.finance.classes.DAO;
 import drosa.finance.classes.QuoteShort;
 import drosa.finance.classes.TestLines;
 import drosa.finance.experiments.Experiment1;
+import drosa.finance.experiments.Experiment3;
 import drosa.finance.experiments.Experiment4;
 import drosa.finance.types.DataProvider;
 import drosa.finance.utils.DataUtils;
@@ -79,17 +87,17 @@ public class TestExperiments {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		
-		 //Initialize the user interface backend
-	 // UIServer uiServer = UIServer.getInstance();
+		//Initialize the user interface backend
+	 UIServer uiServer = UIServer.getInstance();
 	    //Configure where the network information (gradients, score vs. time etc) is to be stored. Here: store in memory.
-	 // StatsStorage statsStorage = new InMemoryStatsStorage();         //Alternative: new FileStatsStorage(File), for saving and loading later
+	 StatsStorage statsStorage = new InMemoryStatsStorage();         //Alternative: new FileStatsStorage(File), for saving and loading later
 	  //Configure where the network information (gradients, activations, score vs. time etc) is to be stored
       //Then add the StatsListener to collect this information from the network, as it trains
       //StatsStorage statsStorage = new FileStatsStorage(new File(System.getProperty("java.io.tmpdir"), "ui-stats.dl4j"));
-      //int listenerFrequency = 1;
+      int listenerFrequency = 1;
 	  
 	    //Attach the StatsStorage instance to the UI: this allows the contents of the StatsStorage to be visualized
-	   //uiServer.attach(statsStorage);
+	   uiServer.attach(statsStorage);
 	   //setListeners(new StatsListener(statsStorage, listenerFrequency));
 		
 		//CudaEnvironment.getInstance().getConfiguration().allowMultiGPU(true);
@@ -136,10 +144,10 @@ public class TestExperiments {
 		
 		//experimento de clasificación
 		//Experiment4.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);
-		Experiment1.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);
+		//Experiment1.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,statsStorage);
 		
 		//regresion
-		//Experiment3.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);
+		Experiment3.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,statsStorage);
 
 		
 		

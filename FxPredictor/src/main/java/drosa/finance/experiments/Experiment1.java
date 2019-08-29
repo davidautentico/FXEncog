@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
@@ -22,6 +23,7 @@ import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTermina
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.ui.stats.StatsListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -45,7 +47,7 @@ public class Experiment1 {
 	 * @param fileNameTrainPro
 	 * @throws IOException 
 	 */
-	private static void doExtractXfromData2(
+	private static void doExtractXfromData(
 			ArrayList<QuoteShort> data,
 			String fileName, ArrayList<Integer> maxMins, 
 			int pipsTarget,int pipsSL,
@@ -231,7 +233,8 @@ public class Experiment1 {
 			 ArrayList<QuoteShort> dataTrainRaw,
 			 ArrayList<QuoteShort> dataTrainTest,
 			 ArrayList<Integer> maxMinsRaw,
-			 ArrayList<Integer> maxMinsTest
+			 ArrayList<Integer> maxMinsTest,
+			 StatsStorage statsStorage
 			 ) throws IOException, InterruptedException{
 		
 		 DecimalFormat df = new DecimalFormat("0.0000"); 
@@ -240,17 +243,18 @@ public class Experiment1 {
 		int numOutputs 	= 1;
 		int numInputs 	= 14;//4:10,4b:20
 		double momentumRate = 0.90;
-		
-		for (int pipsTarget = 150;pipsTarget<=150;pipsTarget+=50){ 
-	       	for (int factorSl=1;factorSl<=1;factorSl+=1){
+		String header="Experimento 1: Capas = 10 Nodos=10 Target=15 BatchSize = 32";
+		System.out.println("**** "+header+" ****");
+		for (int pipsTarget = 100;pipsTarget<=100;pipsTarget+=50){ 
+	       	for (int factorSl=3;factorSl<=3;factorSl+=1){
 		        	int pipsSL = factorSl*pipsTarget;
-		        	for (int maxMinThr1=0;maxMinThr1<=1000;maxMinThr1+=1){ 
+		        	for (int maxMinThr1=500;maxMinThr1<=500;maxMinThr1+=1){ 
 			        	 //preprocesamiento calculando indicadores del dataset
-				  		doExtractXfromData2(dataTrainRaw,fileNameTrainPro,maxMinsRaw,pipsTarget,pipsSL,maxMinThr1,true);
-				  		doExtractXfromData2(dataTrainTest,fileNameTestPro,maxMinsTest,pipsTarget,pipsSL,maxMinThr1,true);
+				  		doExtractXfromData(dataTrainRaw,fileNameTrainPro,maxMinsRaw,pipsTarget,pipsSL,maxMinThr1,true);
+				  		doExtractXfromData(dataTrainTest,fileNameTestPro,maxMinsTest,pipsTarget,pipsSL,maxMinThr1,true);
 				  		
-				  		for (int numHiddenNodes = 10;numHiddenNodes<=10;numHiddenNodes+=1){
-				        	for (int numLayers =10;numLayers<=10;numLayers+=1){
+				  		for (int numHiddenNodes = 10;numHiddenNodes<=10;numHiddenNodes+=10){
+				        	for (int numLayers =5;numLayers<=5;numLayers+=1){
 				        		for (int batchSize=32;batchSize<=32;batchSize+=8){
 				        			for (int nEpochs=100;nEpochs<=100;nEpochs+=1){
 				        				for (double learningRate=0.01;learningRate<=0.01;learningRate+=0.010){		        					
@@ -286,6 +290,12 @@ public class Experiment1 {
 											        		numOutputs,numLayers,learningRate,momentumRate,
 											        		Activation.RELU,Activation.SIGMOID,LossFunction.XENT);			       
 											        model.init();
+											        
+											        if (statsStorage!=null){
+											        	 //Then add the StatsListener to collect this information from the network, as it trains
+											            model.setListeners(new StatsListener(statsStorage));
+											        }
+											        
 											        
 											        //3) APLICAMOS MODELO AL CONJUNTO DE ENTRENAMIENTO
 											        /*for ( int n = 0; n < nEpochs; n++) {
@@ -392,7 +402,7 @@ public class Experiment1 {
 												        }
 												        int trades = wins+losses;
 												        System.out.println(
-												        		pipsTarget+";"+pipsSL
+												        		pipsTarget+";"+pipsSL+";"+maxMinThr1
 												        		+";"+numHiddenNodes+";"+numLayers+";"+batchSize
 												        		+";"+stratThr
 												        		+";"+result.getTotalEpochs()

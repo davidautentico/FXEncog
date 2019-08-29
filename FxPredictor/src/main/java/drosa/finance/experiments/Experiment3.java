@@ -13,6 +13,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
+import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
@@ -23,6 +24,7 @@ import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationC
 import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.ui.stats.StatsListener;
 import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -140,7 +142,8 @@ public class Experiment3 {
 			 ArrayList<QuoteShort> dataTrainRaw,
 			 ArrayList<QuoteShort> dataTrainTest,
 			 ArrayList<Integer> maxMinsRaw,
-			 ArrayList<Integer> maxMinsTest
+			 ArrayList<Integer> maxMinsTest,
+			 StatsStorage statsStorage
 			 ) throws IOException, InterruptedException{
 		
 		 DecimalFormat df = new DecimalFormat("0.0000"); 
@@ -150,7 +153,7 @@ public class Experiment3 {
 		int numInputs 	= 25;//4:10,4b:20
 		double momentumRate = 0.50;
 		
-		for (int pipsTarget = 50;pipsTarget<=300;pipsTarget+=50){ 
+		for (int pipsTarget = 100;pipsTarget<=100;pipsTarget+=50){ 
        	for (int factorSl=1;factorSl<=1;factorSl+=1){
 	        	int pipsSL = factorSl*pipsTarget;
 	        	//preprocesamiento calculando indicadores del dataset
@@ -161,7 +164,7 @@ public class Experiment3 {
 		        	for (int numLayers =5;numLayers<=5;numLayers+=1){
 		        		for (int batchSize=64;batchSize<=64;batchSize+=8){
 		        			for (int nEpochs=100;nEpochs<=100;nEpochs+=1){
-		        				for (double learningRate=0.01;learningRate<=0.01;learningRate+=0.01){		        					
+		        				for (double learningRate=0.001;learningRate<=0.001;learningRate+=0.01){		        					
 		        					for (int maxSeconds = 120;maxSeconds<=120;maxSeconds+=60){	
 		        						for (double stratThr=0.005;stratThr<=0.005;stratThr+=0.01){
 			        						//1.1) TRAIN
@@ -179,6 +182,11 @@ public class Experiment3 {
 									        		numOutputs,numLayers,learningRate,momentumRate,
 									        		Activation.SIGMOID,Activation.RELU,LossFunction.MSE);			       
 									        model.init();
+									        
+									        if (statsStorage!=null){
+									        	 //Then add the StatsListener to collect this information from the network, as it trains
+									            model.setListeners(new StatsListener(statsStorage));
+									        }
 									        
 									        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
 									                .epochTerminationConditions(new MaxEpochsTerminationCondition(10000), 
