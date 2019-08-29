@@ -20,11 +20,14 @@ import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationConditio
 import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import drosa.finance.classes.QuoteShort;
@@ -212,7 +215,7 @@ public class Experiment1 {
 			out.close();
 			
 			int totaltrades = wins+losses;
-			System.out.println(totaltrades+" win% "+(wins*100.0/totaltrades)+" "+total1s+" "+total0s);
+			//System.out.println(totaltrades+" win% "+(wins*100.0/totaltrades)+" "+total1s+" "+total0s);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			System.err.println("[doExtractXfromData] Error: " + e.getMessage());
@@ -235,20 +238,20 @@ public class Experiment1 {
 		 
 		int limit		= 500;
 		int numOutputs 	= 1;
-		int numInputs 	= 30;//4:10,4b:20
-		double momentumRate = 0.50;
+		int numInputs 	= 14;//4:10,4b:20
+		double momentumRate = 0.90;
 		
-		for (int pipsTarget = 100;pipsTarget<=100;pipsTarget+=50){ 
+		for (int pipsTarget = 150;pipsTarget<=150;pipsTarget+=50){ 
 	       	for (int factorSl=1;factorSl<=1;factorSl+=1){
 		        	int pipsSL = factorSl*pipsTarget;
-		        	for (int maxMinThr1=100;maxMinThr1<=100;maxMinThr1+=1){ 
+		        	for (int maxMinThr1=0;maxMinThr1<=1000;maxMinThr1+=1){ 
 			        	 //preprocesamiento calculando indicadores del dataset
 				  		doExtractXfromData2(dataTrainRaw,fileNameTrainPro,maxMinsRaw,pipsTarget,pipsSL,maxMinThr1,true);
 				  		doExtractXfromData2(dataTrainTest,fileNameTestPro,maxMinsTest,pipsTarget,pipsSL,maxMinThr1,true);
 				  		
 				  		for (int numHiddenNodes = 10;numHiddenNodes<=10;numHiddenNodes+=1){
-				        	for (int numLayers =1;numLayers<=1;numLayers+=1){
-				        		for (int batchSize=64;batchSize<=64;batchSize+=8){
+				        	for (int numLayers =10;numLayers<=10;numLayers+=1){
+				        		for (int batchSize=32;batchSize<=32;batchSize+=8){
 				        			for (int nEpochs=100;nEpochs<=100;nEpochs+=1){
 				        				for (double learningRate=0.01;learningRate<=0.01;learningRate+=0.010){		        					
 				        					for (int maxSeconds = 240;maxSeconds<=240;maxSeconds+=60){	
@@ -263,12 +266,73 @@ public class Experiment1 {
 											        rrTest.initialize(new FileSplit(new File(fileNameTestPro)));
 											        DataSetIterator testIter = new RecordReaderDataSetIterator(rrTest,batchSize,0,1);
 											        
+											      //Normalize the training data
+											        DataNormalization normalizer = new NormalizerStandardize();
+											        normalizer.fit(trainIter);              //Collect training data statistics
+											        trainIter.reset();
+											        //Use previously collected statistics to normalize on-the-fly. Each DataSet returned by 'trainData' iterator will be normalized
+											        trainIter.setPreProcessor(normalizer);
+											        
+											      //Normalize the training data
+											       // DataNormalization normalizer = new NormalizerStandardize();
+											        normalizer.fit(testIter);              //Collect training data statistics
+											        testIter.reset();
+											        //Use previously collected statistics to normalize on-the-fly. Each DataSet returned by 'trainData' iterator will be normalized
+											        testIter.setPreProcessor(normalizer);
+
+											        
 											       //2) CONSTRUIMOS EL MODELO
 											        MultiLayerNetwork model = ModelHelper.buildModel(numInputs,numHiddenNodes,
 											        		numOutputs,numLayers,learningRate,momentumRate,
 											        		Activation.RELU,Activation.SIGMOID,LossFunction.XENT);			       
 											        model.init();
 											        
+											        //3) APLICAMOS MODELO AL CONJUNTO DE ENTRENAMIENTO
+											        /*for ( int n = 0; n < nEpochs; n++) {
+											        	//System.out.println("Epoch.."+n);
+											            model.fit(trainIter);
+											        }
+														
+											       // System.out.println("Evaluate model....");
+											        Evaluation eval = new Evaluation(numOutputs);
+											        while(testIter.hasNext()){
+											            DataSet t = testIter.next();
+											            INDArray features = t.getFeatures();
+											            INDArray labels = t.getLabels();
+											            INDArray predicted = model.output(features,false);
+											            eval.eval(labels, predicted);
+											        }
+														      
+											        //Print the evaluation statistics
+											        //System.out.println(eval.stats());
+												        
+											        int tp = (int) eval.getTruePositives().getCount(1);
+											        int tn = (int) eval.getTrueNegatives().getCount(1);
+											        int fp = (int) eval.getFalsePositives().getCount(1);
+											        int fn = (int) eval.getFalseNegatives().getCount(1);
+											        
+											       // int totalLabels = eval.get       
+											        
+											        double precision = tp*1.0/(tp+fp);
+											        double accuracy = (tp+tn)*1.0/(tp+tn+fp+fn); 
+											        double recall = tp*1.0/(tp+fn); 
+											        double f1Score = (2.0*(precision*recall))/(precision+recall);
+											        double pf = accuracy*pipsTarget*1.0/((1.0-accuracy)*pipsSL);
+											        
+											        //DecimalFormat df = new DecimalFormat("0.0000");
+											        System.out.println(
+											        			pipsTarget+";"+pipsSL
+											        			+";"+maxMinThr1
+											        			+";"+nEpochs+";"+batchSize
+											        			+";"+numHiddenNodes+";"+numLayers							        			
+											        			//+";"+tp+";"+fp+";"+tn+";"+fn
+											        			+";"+PrintUtils.format(df, accuracy*100.0)
+											        			+";"+PrintUtils.format(df, pf)
+											        			//+";"+format(df, pf)
+											        			//+" || "+format(df, pipsTarget*tp*1.0/(pipsSL*fp))
+											        			//+" || "+format(df, model.score())
+											        			);
+											        */
 											        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
 											                .epochTerminationConditions(new MaxEpochsTerminationCondition(10000), 
 											                		new ScoreImprovementEpochTerminationCondition(5)) //Max of 50 epochs
@@ -285,7 +349,10 @@ public class Experiment1 {
 											        
 											        MultiLayerNetwork bestModel =(MultiLayerNetwork) result.getBestModel();
 											        
-											        if (result.getBestModelEpoch()<0) continue;
+											        if (result.getBestModelEpoch()<0){
+											        	System.out.println("BestEpoch failed: "+result.getBestModelEpoch());
+											        	continue;
+											        }
 											        
 												       int wins = 0;
 												        int losses = 0;

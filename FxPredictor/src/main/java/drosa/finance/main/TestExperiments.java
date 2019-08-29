@@ -135,8 +135,8 @@ public class TestExperiments {
 		//EXPERIMENTOS
 		
 		//experimento de clasificación
-		Experiment4.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);
-		//Experiment1.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);
+		//Experiment4.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);
+		Experiment1.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);
 		
 		//regresion
 		//Experiment3.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);

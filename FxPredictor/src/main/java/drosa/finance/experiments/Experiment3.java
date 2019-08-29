@@ -17,11 +17,13 @@ import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.RegressionScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -183,8 +185,8 @@ public class Experiment3 {
 									                		new ScoreImprovementEpochTerminationCondition(5)) //Max of 50 epochs
 									                .evaluateEveryNEpochs(1)
 									                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(maxSeconds, TimeUnit.SECONDS)) //Max of 20 minutes
-									                .scoreCalculator(new DataSetLossCalculator(testIter, true))     //Calculate test set score
-									                //.scoreCalculator(new RegressionScoreCalculator(Metric.MSE, testIter))//para regresion
+									                //.scoreCalculator(new DataSetLossCalculator(testIter, true))     //Calculate test set score
+									                .scoreCalculator(new RegressionScoreCalculator(Metric.MAE, testIter))//para regresion
 									                .build();
 	
 									        EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf,model,trainIter);
