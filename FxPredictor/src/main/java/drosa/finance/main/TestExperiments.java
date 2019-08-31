@@ -88,69 +88,84 @@ public class TestExperiments {
 	public static void main(String[] args) throws IOException, InterruptedException {
 		
 		//Initialize the user interface backend
-	 UIServer uiServer = UIServer.getInstance();
+	 //UIServer uiServer = UIServer.getInstance();
 	    //Configure where the network information (gradients, score vs. time etc) is to be stored. Here: store in memory.
-	 StatsStorage statsStorage = new InMemoryStatsStorage();         //Alternative: new FileStatsStorage(File), for saving and loading later
+	 //StatsStorage statsStorage = new InMemoryStatsStorage();         //Alternative: new FileStatsStorage(File), for saving and loading later
 	  //Configure where the network information (gradients, activations, score vs. time etc) is to be stored
       //Then add the StatsListener to collect this information from the network, as it trains
-      //StatsStorage statsStorage = new FileStatsStorage(new File(System.getProperty("java.io.tmpdir"), "ui-stats.dl4j"));
-      int listenerFrequency = 1;
+      //StatsStorage statsStorage =new FileStatsStorage(new File(System.getProperty("java.io.tmpdir"), "ui-stats.dl4j"));
+     // int listenerFrequency = 1;
+		
+		StatsStorage statsStorage = null;
 	  
 	    //Attach the StatsStorage instance to the UI: this allows the contents of the StatsStorage to be visualized
-	   uiServer.attach(statsStorage);
+	   //uiServer.attach(statsStorage);
 	   //setListeners(new StatsListener(statsStorage, listenerFrequency));
 		
 		//CudaEnvironment.getInstance().getConfiguration().allowMultiGPU(true);
 		
 		//lectura de datos financieros
 		//habra que partir los datos en varios años para probar
+	   
+	   int yearTest =1;//0:2015,1:2017,2:2019
+	   String fileNameTrainRaw15	= "";
+		String fileNameTestRaw15	= "";
+		String fileNameTrainPro15 	= "";
+		String fileNameTestPro15	= ""; 
+		String path = "c:\\fxdata";
 		
-		//15min
-		/*String fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2017.01.01_2019.02.28.csv";
-		String fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.03.01_2019.08.25.csv";
-		String fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2017.01.01_2019.02.28_pro.csv";
-		String fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.03.01_2019.08.25_pro.csv";*/
-		
-		//String fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2018.12.31.csv";
-		//String fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.01.01_2019.08.25.csv";
-		//String fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2018.12.31_pro.csv";
-		//String fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.01.01_2019.08.25_pro.csv";
-		
-		String fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2014.12.31.csv";
-		String fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2015.01.01_2015.12.31.csv";
-		String fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2014.12.31_pro.csv";
-		String fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2015.01.01_2015.12.31_pro.csv";
-				
-		boolean is15m = true;
-		
-		String fileNameTrainRaw	= fileNameTrainRaw15;
-		String fileNameTestRaw	= fileNameTestRaw15;
-		String fileNameTrainPro = fileNameTrainPro15;
-		String fileNameTestPro  = fileNameTestPro15;
+		for (yearTest=0;yearTest<=2;yearTest++){
+		    if (yearTest==0){
+		    	fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2014.12.31.csv";
+		    	fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2015.01.01_2015.12.31.csv";
+		    	fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2014.12.31_pro.csv";
+		    	fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2015.01.01_2015.12.31_pro.csv";
+		    }
+		    if (yearTest==1){
+		    	fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2016.12.31.csv";
+		    	fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2017.01.01_2017.12.31.csv";
+		    	fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2016.12.31_pro.csv";
+		    	fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2017.01.01_2017.12.31_pro.csv";
+		    }
+		    if (yearTest==2){
+		    	fileNameTrainRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2018.12.31.csv";
+		    	fileNameTestRaw15	= "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.01.01_2019.08.25.csv";
+		    	fileNameTrainPro15 = "C:\\fxdata\\EURUSD_15 Mins_Bid_2009.01.01_2018.12.31_pro.csv";
+		    	fileNameTestPro15  = "C:\\fxdata\\EURUSD_15 Mins_Bid_2019.01.01_2019.08.25_pro.csv";
+		    }
+					
+			boolean is15m = true;
+			
+			String fileNameTrainRaw	= fileNameTrainRaw15;
+			String fileNameTestRaw	= fileNameTestRaw15;
+			String fileNameTrainPro = fileNameTrainPro15;
+			String fileNameTestPro  = fileNameTestPro15;
+	
+			
+			ArrayList<QuoteShort> dataTrainRaw = new ArrayList<QuoteShort>();
+			ArrayList<QuoteShort> dataTestRaw = new ArrayList<QuoteShort>();
+			
+			dataTrainRaw	= DataUtils.readData(fileNameTrainRaw);
+			dataTestRaw 	=  DataUtils.readData(fileNameTestRaw);
+			
+			ArrayList<Integer> maxMinsRaw = TradingUtils.calculateMaxMinByBarShortAbsoluteInt(dataTrainRaw);
+			ArrayList<Integer> maxMinsTest = TradingUtils.calculateMaxMinByBarShortAbsoluteInt(dataTestRaw);
+			
+			//System.out.println("Leido raw data,tamaños datos leidos: "+dataTrainRaw.size()+" "+dataTestRaw.size());
+			
+			//EXPERIMENTOS
+			
+			//experimento de clasificación
+			//Experiment4.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);
+			//Experiment1.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,statsStorage);
+			
+			//regresion			
+			String headerMain = fileNameTrainRaw;	
+			Experiment4.doTestAlgo(headerMain,path,dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,0,statsStorage);
+		}
 
 		
-		ArrayList<QuoteShort> dataTrainRaw = new ArrayList<QuoteShort>();
-		ArrayList<QuoteShort> dataTestRaw = new ArrayList<QuoteShort>();
-		
-		dataTrainRaw	= DataUtils.readData(fileNameTrainRaw);
-		dataTestRaw 	=  DataUtils.readData(fileNameTestRaw);
-		
-		ArrayList<Integer> maxMinsRaw = TradingUtils.calculateMaxMinByBarShortAbsoluteInt(dataTrainRaw);
-		ArrayList<Integer> maxMinsTest = TradingUtils.calculateMaxMinByBarShortAbsoluteInt(dataTestRaw);
-		
-		System.out.println("Leido raw data,tamaños datos leidos: "+dataTrainRaw.size()+" "+dataTestRaw.size());
-		
-		//EXPERIMENTOS
-		
-		//experimento de clasificación
-		//Experiment4.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);
-		//Experiment1.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,statsStorage);
-		
-		//regresion
-		Experiment3.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,statsStorage);
-
-		
-		
+		//uiServer.stop();
 		System.out.println("Programa finalizado");
 	}
 

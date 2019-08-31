@@ -153,6 +153,8 @@ public class Experiment3 {
 		int numInputs 	= 25;//4:10,4b:20
 		double momentumRate = 0.50;
 		
+		String header="**Experimento 3**";
+		System.out.println("**** "+header+" ****");
 		for (int pipsTarget = 100;pipsTarget<=100;pipsTarget+=50){ 
        	for (int factorSl=1;factorSl<=1;factorSl+=1){
 	        	int pipsSL = factorSl*pipsTarget;
@@ -160,12 +162,12 @@ public class Experiment3 {
 		  		doExtractXfromData(dataTrainRaw,fileNameTrainPro);
 		  		doExtractXfromData(dataTrainTest,fileNameTestPro);
 		  		
-		  		for (int numHiddenNodes = 10;numHiddenNodes<=10;numHiddenNodes+=5){
-		        	for (int numLayers =5;numLayers<=5;numLayers+=1){
+		  		for (int numHiddenNodes = 2;numHiddenNodes<=2;numHiddenNodes+=5){
+		        	for (int numLayers =1;numLayers<=1;numLayers+=1){
 		        		for (int batchSize=64;batchSize<=64;batchSize+=8){
 		        			for (int nEpochs=100;nEpochs<=100;nEpochs+=1){
 		        				for (double learningRate=0.001;learningRate<=0.001;learningRate+=0.01){		        					
-		        					for (int maxSeconds = 120;maxSeconds<=120;maxSeconds+=60){	
+		        					for (int maxSeconds = 60;maxSeconds<=60;maxSeconds+=60){	
 		        						for (double stratThr=0.005;stratThr<=0.005;stratThr+=0.01){
 			        						//1.1) TRAIN
 									        RecordReader rr = new CSVRecordReader();
@@ -190,7 +192,7 @@ public class Experiment3 {
 									        
 									        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
 									                .epochTerminationConditions(new MaxEpochsTerminationCondition(10000), 
-									                		new ScoreImprovementEpochTerminationCondition(5)) //Max of 50 epochs
+									                		new ScoreImprovementEpochTerminationCondition(3)) //Max of 50 epochs
 									                .evaluateEveryNEpochs(1)
 									                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(maxSeconds, TimeUnit.SECONDS)) //Max of 20 minutes
 									                //.scoreCalculator(new DataSetLossCalculator(testIter, true))     //Calculate test set score

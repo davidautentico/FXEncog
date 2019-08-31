@@ -265,6 +265,8 @@ public class Experiment1 {
 											        rr.initialize(new FileSplit(new File(fileNameTrainPro)));
 											        DataSetIterator trainIter = new RecordReaderDataSetIterator(rr,batchSize,0,1);
 											        
+											        System.out.println(rr.getLabels().size());
+											        
 											        //1.2) TEST
 											        RecordReader rrTest = new CSVRecordReader();
 											        rrTest.initialize(new FileSplit(new File(fileNameTestPro)));
