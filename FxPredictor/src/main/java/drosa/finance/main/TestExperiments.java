@@ -94,7 +94,7 @@ public class TestExperiments {
 	  //Configure where the network information (gradients, activations, score vs. time etc) is to be stored
       //Then add the StatsListener to collect this information from the network, as it trains
       //StatsStorage statsStorage =new FileStatsStorage(new File(System.getProperty("java.io.tmpdir"), "ui-stats.dl4j"));
-     // int listenerFrequency = 1;
+     //int listenerFrequency = 1;
 		
 		StatsStorage statsStorage = null;
 	  
@@ -161,7 +161,7 @@ public class TestExperiments {
 			
 			//regresion			
 			String headerMain = fileNameTrainRaw;	
-			Experiment4.doTestAlgo(headerMain,path,dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,0,statsStorage);
+			Experiment4.doTestAlgo(headerMain,path,dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,2,statsStorage);
 		}
 
 		

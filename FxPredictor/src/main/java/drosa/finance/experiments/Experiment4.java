@@ -23,6 +23,7 @@ import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationC
 import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.ui.stats.StatsListener;
 import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -423,7 +424,8 @@ public class Experiment4 {
 			int n,
 			DataSetIterator trainIter,
 			DataSetIterator testIter,
-			HyperParameterConf hConf) {
+			HyperParameterConf hConf,
+			StatsStorage statsStorage) {
 		
 		MultiLayerNetwork bestModel = null;
 		double bestWinPer = 0.0;
@@ -441,12 +443,17 @@ public class Experiment4 {
         						//2) CONSTRUIMOS EL MODELO
 						        MultiLayerNetwork actualModel = ModelHelper.buildModel(numInputs,numHiddenNodes,
 						        		numOutputs,numLayers,learningRate,mr,
-						        		Activation.RELU,Activation.SIGMOID,LossFunction.XENT);			       
+						        		Activation.RELU,
+						        		Activation.SIGMOID,LossFunction.XENT
+						        		//Activation.SIGMOID,LossFunction.MEAN_ABSOLUTE_ERROR
+						        		);			       
 						        actualModel .init();
+						        if (statsStorage!=null)
+						        	actualModel.setListeners(new StatsListener(statsStorage, 1));
 						        
 						        EarlyStoppingConfiguration esConf = new EarlyStoppingConfiguration.Builder()
 						                .epochTerminationConditions(new MaxEpochsTerminationCondition(nEpochs), 
-						                		new ScoreImprovementEpochTerminationCondition(1)) //Max of 50 epochs
+						                		new ScoreImprovementEpochTerminationCondition(10)) //Max of 50 epochs
 						                .evaluateEveryNEpochs(1)
 						                .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(maxSeconds, TimeUnit.SECONDS)) //Max of 20 minutes
 						                //.scoreCalculator(new DataSetLossCalculator(testIter, false))     //Calculate test set score
@@ -462,7 +469,7 @@ public class Experiment4 {
 						        trainIter.reset();
 						        per.reset();
 						        
-						        doCalculateWinPer(actualBestModel,trainIter,0.40,per);
+						        doCalculateWinPer(actualBestModel,trainIter,0.50,per);
 						        
 						        if (per.getTrades()>0){
 						        	double tradesPer = per.getTrades()*100.0/n;
@@ -517,9 +524,12 @@ public class Experiment4 {
 		double momentumRate = 0.90;
 		boolean isSell	= modeTest==1;
 		int batchSize	= 64;
-		double maxThr	= 0.50;
-		double minThr	= 0.50;
-		double stepThr	= 0.01;
+		double minThr	= 0.20;
+		double maxThr	= 1.01;
+		double stepThr	= 0.05;
+		int minSeconds	= 60;
+		int maxSeconds	= 60;
+		int stepSeconds	= 10;
 		int n			= dataTrainRaw.size();
 		
 		String fileTrainProBuy		= path+"\\"+"trainBuy.csv";
@@ -535,7 +545,7 @@ public class Experiment4 {
 		DataSetIterator testIterSell	= null;
 		String header=headerMain;
 		
-		for (int pipsTarget = 100;pipsTarget<=500;pipsTarget+=100){ 
+		for (int pipsTarget = 200;pipsTarget<=200;pipsTarget+=100){ 
 			for (int factorSl=1;factorSl<=1;factorSl+=1){
 	        	int pipsSL = factorSl*pipsTarget;
 	        	header = headerMain+";"+pipsTarget+";"+pipsSL;
@@ -553,15 +563,14 @@ public class Experiment4 {
 			  		hConf.setMinBatchSize(batchSize);
 			  		hConf.setMinNodes(15);
 			  		hConf.setMaxNodes(15);
-			  		hConf.setStepNodes(15);
+			  		hConf.setStepNodes(5);
 			  		hConf.setMinTradesPer(10.0);//10%
 			  		hConf.setMinEpochs(50);
 			  		hConf.setMaxEpochs(50);
 			  		hConf.setStepEpochs(10);
-			  		//hConf.setMinLayers(1);
-			  		//hConf.setMaxLayers(3);
-			  		//hConf.setStepLayers(1);
-			  		
+			  		hConf.setMinLayers(1);
+			  		hConf.setMaxLayers(1);
+			  		hConf.setStepLayers(1);
 			  		//1.1) TRAIN
 			        RecordReader rr = new CSVRecordReader(0,",");
 			        rr.initialize(new FileSplit(new File(fileTrainProBuy)));
@@ -575,7 +584,7 @@ public class Experiment4 {
 			        testIterBuy = new RecordReaderDataSetIterator(rrTest,batchSize,0,1);
 			        
 			        //entrenamos
-			  		modelBuy = doTrain(n,trainIterBuy,testIterBuy,hConf);
+			  		modelBuy = doTrain(n,trainIterBuy,testIterBuy,hConf,statsStorage);
 			  		
 			  		if (modelBuy==null){
 			  			System.out.println("MODELBUY A NULL");
@@ -592,10 +601,10 @@ public class Experiment4 {
 			  		hConf.setMomentumRate(momentumRate);
 			  		hConf.setMaxBatchSize(batchSize);
 			  		hConf.setMinBatchSize(batchSize);
-			  		hConf.setMinNodes(5);
-			  		hConf.setMaxNodes(30);
+			  		hConf.setMinNodes(15);
+			  		hConf.setMaxNodes(15);
 			  		hConf.setStepNodes(5);
-			  		hConf.setMinTradesPer(1.0);//10%
+			  		hConf.setMinTradesPer(10.0);//10%
 			  		hConf.setMinEpochs(50);
 			  		hConf.setMinEpochs(50);
 			  		hConf.setStepEpochs(10);
@@ -614,7 +623,7 @@ public class Experiment4 {
 			        testIterSell = new RecordReaderDataSetIterator(rrTest,batchSize,0,1);	
 			        
 			        //entrenamos
-			  		modelSell = doTrain(n,trainIterSell,testIterSell,hConf);
+			  		modelSell = doTrain(n,trainIterSell,testIterSell,hConf,statsStorage);
 			  		
 			  		if (modelSell==null){
 			  			System.out.println("MODELSELL A NULL");
