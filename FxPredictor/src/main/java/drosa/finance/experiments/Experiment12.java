@@ -39,7 +39,7 @@ import drosa.finance.utils.MathUtils;
 import drosa.finance.utils.ModelHelper;
 import drosa.finance.utils.PrintUtils;
 
-public class Experiment4 {
+public class Experiment12 {
 	
 	/**
 	 * Se extraen las características de los datos planos y la clase a la que pertenece cada vector input,

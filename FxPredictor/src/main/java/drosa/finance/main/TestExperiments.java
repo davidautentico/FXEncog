@@ -3,6 +3,7 @@ package drosa.finance.main;
 import java.io.BufferedWriter;
 
 
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -69,9 +70,9 @@ import org.slf4j.Logger;
 import drosa.finance.classes.DAO;
 import drosa.finance.classes.QuoteShort;
 import drosa.finance.classes.TestLines;
-import drosa.finance.experiments.Experiment1;
 import drosa.finance.experiments.Experiment3;
-import drosa.finance.experiments.Experiment4;
+import drosa.finance.experiments.Experiment3old;
+import drosa.finance.experiments.Experiment12;
 import drosa.finance.types.DataProvider;
 import drosa.finance.utils.DataUtils;
 import drosa.finance.utils.MathUtils;
@@ -151,17 +152,11 @@ public class TestExperiments {
 			ArrayList<Integer> maxMinsRaw = TradingUtils.calculateMaxMinByBarShortAbsoluteInt(dataTrainRaw);
 			ArrayList<Integer> maxMinsTest = TradingUtils.calculateMaxMinByBarShortAbsoluteInt(dataTestRaw);
 			
-			//System.out.println("Leido raw data,tamaños datos leidos: "+dataTrainRaw.size()+" "+dataTestRaw.size());
-			
-			//EXPERIMENTOS
-			
-			//experimento de clasificación
-			//Experiment4.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest);
-			//Experiment1.doTestAlgo(fileNameTrainPro, fileNameTestPro, dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,statsStorage);
-			
 			//regresion			
 			String headerMain = fileNameTrainRaw;	
-			Experiment4.doTestAlgo(headerMain,path,dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,2,statsStorage);
+			//Experiment12.doTestAlgo(headerMain,path,dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,2,statsStorage);
+			//SIMPLE
+			Experiment3.doTestAlgo(headerMain,path,dataTrainRaw, dataTestRaw, maxMinsRaw, maxMinsTest,0,statsStorage);
 		}
 
 		

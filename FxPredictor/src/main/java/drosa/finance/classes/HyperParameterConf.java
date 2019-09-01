@@ -20,8 +20,8 @@ public class HyperParameterConf {
 	int minEpochs	= 100;
 	int stepEpochs	= 1;	
 	//trainingTime
-	int maxSeconds	= 60;
-	int minSeconds	= 60;
+	int maxSeconds	= 120;
+	int minSeconds	= 120;
 	int stepSeconds	= 1;	
 	//batchSize
 	int maxBatchSize	= 64;
