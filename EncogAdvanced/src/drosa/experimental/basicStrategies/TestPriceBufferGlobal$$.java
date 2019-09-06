@@ -12,6 +12,7 @@ import drosa.data.DataUtils;
 import drosa.experimental.CoreStrategies.PositionCore;
 import drosa.experimental.CoreStrategies.StrategyConfig;
 import drosa.experimental.CoreStrategies.TestPriceBuffer;
+import drosa.experimental.basicStrategies.strats2019.StratPerformance;
 import drosa.finances.QuoteShort;
 import drosa.memory.Sizeof;
 import drosa.phil.TestLines;
@@ -43,9 +44,12 @@ public class TestPriceBufferGlobal$$ {
 			boolean debug,
 			boolean printSummary,
 			int returnMode,
-			HashMap<Integer,Integer> dayTotalPips
+			HashMap<Integer,Integer> dayTotalPips,
+			StratPerformance sp
 			){
-		//
+
+		sp.reset();
+		sp.setInitialBalance(balance);
 		
 		double balanceInicial = balance;
 		double actualBalance = balance; //actual equitity
@@ -189,7 +193,7 @@ public class TestPriceBufferGlobal$$ {
 							
 						
 						double realRisk = risk;
-						if (dayDDPip<30000.0) realRisk =0.3;
+						//if (dayDDPip<30000.0) realRisk =0.3;
 						/*if (maxTrades*risk>=80){
 							realRisk = 80.0/maxTrades;
 						}*/
@@ -220,8 +224,10 @@ public class TestPriceBufferGlobal$$ {
 							totalRiskedPips += config.getSl();
 							//pipValue
 							pos.setPipValue(pipValue);
+							pos.setMicroLots(miniLots);
+					
 							
-							//System.out.println("[SHORT] "+q.toString());
+							//System.out.println("[SHORT] "+maxRisk$$ +" "+pipValue+" "+miniLots+" "+10*config.getSl());
 							positions.add(pos);
 						}else if (maxMin<=-thr
 								//&& sizeLH==sizeCandle*10
@@ -242,6 +248,7 @@ public class TestPriceBufferGlobal$$ {
 							totalRiskedPips += config.getSl();
 							//pipValue
 							pos.setPipValue(pipValue);
+							pos.setMicroLots(miniLots);
 							
 							//System.out.println("[LONG] "+q.toString());
 							positions.add(pos);
@@ -330,6 +337,7 @@ public class TestPriceBufferGlobal$$ {
 								maxDD = dd;
 							}
 						}
+						sp.addTrade((long)pos.getMicroLots(),pips,Math.abs(pos.getEntry()-pos.getTp()),Math.abs(pos.getEntry()-pos.getTp()),(int)(comm*10),cal);
 						
 						//para debug
 					}
@@ -449,7 +457,9 @@ public class TestPriceBufferGlobal$$ {
 		
 		double tae = 100.0*(Math.pow(actualBalance/(balanceInicial), 1.0/totalAños)-1);
 		double taeFactor = tae/maxDD;
-		
+
+		sp.setMaxDD(maxDD);
+		double var95 = sp.getMonthDataDDRR(sp.getInitialBalance(),risk,2);
 		if (printSummary){
 			//if (pf<0.6)
 			System.out.println(
@@ -467,11 +477,10 @@ public class TestPriceBufferGlobal$$ {
 					+" "+PrintUtils.Print2dec2(maxBalance, true)
 					+" "+PrintUtils.Print2dec(perMaxWin, false)
 					+" || MaxDD="+PrintUtils.Print2dec(maxDD, false)
+					+" || VAR95= "+PrintUtils.Print2dec(var95, false)
 					+" || Factor="+PrintUtils.Print2dec(perMaxWin/maxDD, false)
 					+" || "+PrintUtils.Print2dec(taeFactor, false)
-					+" || "+PrintUtils.Print2dec(perLL, false)
-					+" "+PrintUtils.Print2dec(perLLL, false)
-					+" "+PrintUtils.Print2dec(perLLLL, false)
+					
 					);
 		}
 		
@@ -493,7 +502,7 @@ public class TestPriceBufferGlobal$$ {
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_5 Secs_Bid_2012.01.01_2017.01.04.csv";
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_1 Min_Bid_2008.12.31_2017.02.13.csv";
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_1 Min_Bid_2003.05.04_2017.07.31.csv";
-		String pathEURUSD = "C:\\fxdata\\EURUSD_5 Mins_Bid_2004.01.01_2019.08.04.csv";
+		String pathEURUSD = "C:\\fxdata\\EURUSD_5 Mins_Bid_2004.01.01_2019.09.03.csv";
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_1 Min_Bid_2008.12.31_2018.01.04.csv";
 		
 		ArrayList<String> paths = new ArrayList<String>();
@@ -531,6 +540,7 @@ public class TestPriceBufferGlobal$$ {
 				ArrayList<StrategyConfig> configs = new ArrayList<StrategyConfig>();
 				for (int c=0;c<=23;c++) configs.add(null);
 				
+				//DMO SETTINGS
 				//2012-2016
 				StrategyConfig config = new StrategyConfig();config.setParams(0, 188,35,100,215,8, true);configs.set(0, config);
 				//StrategyConfig config = new StrategyConfig();config.setParams(0, 170,35,90,260,13, true);configs.set(0, config);
@@ -679,10 +689,10 @@ public class TestPriceBufferGlobal$$ {
 												//configs.get(h).setSl(sl);
 											}
 										
-											
-											for (int maxTrades=20;maxTrades<=20;maxTrades+=1){//17 7 2.25
-												double maxRisk = 0.2;
-												for (double risk = 0.20;risk<=maxRisk;risk+=0.10){
+											StratPerformance sp = new StratPerformance();
+											for (int maxTrades=10;maxTrades<=10;maxTrades+=1){//17 7 2.25
+												double maxRisk = 0.4;
+												for (double risk = 0.4;risk<=maxRisk;risk+=0.10){
 												//for (double risk = 1.0;risk<=1.0;risk+=0.01){
 												//for (double risk=6.5;risk<=6.5;risk+=0.25){
 													for (double comm=1.75;comm<=1.75;comm+=0.1){
@@ -694,6 +704,7 @@ public class TestPriceBufferGlobal$$ {
 														double balance = 5000;
 														double accYear = 0;
 														int totalY = 0;
+														ArrayList<Double> maxDDs = new ArrayList<Double>();
 														
 														
 														for (int dayWeek1=Calendar.MONDAY+0;dayWeek1<=Calendar.MONDAY+0;dayWeek1++){
@@ -701,16 +712,21 @@ public class TestPriceBufferGlobal$$ {
 															for (int sc=0;sc<=0;sc++){
 																for (int hf=24;hf<=24;hf++){
 																	for (double aStd=0.0;aStd<=0.0;aStd+=1.0){
-																		for (int y1=2004;y1<=2019;y1+=1){
+																		for (int y1=2009;y1<=2019;y1+=1){
 																			int y2 = y1+0;
-																			for (int m1=0;m1<=8;m1+=4){
-																				int m2 = m1+3;
+																			for (int m1=0;m1<=11;m1+=1){
+																				int m2 = m1+00;
 																				String header1 = y1+" "+y2+" "+m1+" "+m2+" "+maxTrades
 																						+" "+PrintUtils.Print2dec(risk, false)
 																						;
+																				sp.reset();
+																				sp.setActualBalance(4000);																			
 																				double pf = TestPriceBufferGlobal$$.doTest(header1,dataNoise,maxMins,
 																						y1,y2,m1,m2,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																						false,aStd,balance,risk,comm,false,true,0,dayTotalPips);
+																						false,aStd,balance,risk,comm,
+																						false,true,0,dayTotalPips,
+																						sp);
+																				maxDDs.add(sp.getMaxDD());
 																				if (pf>=1.00) totalPositives++;
 																				//if (newBalance>=balance) totalPositives++;
 																				//double per = newBalance*100.0/balance-100.0;
@@ -722,22 +738,25 @@ public class TestPriceBufferGlobal$$ {
 																			}
 																		}
 																	}
-																	if (totalPositives>=50){
+																	if (totalPositives>=2){
 																		//double res0 = TestPriceBufferGlobal$$.doTest("",dataNoise,maxMins,2003,2008,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
 																				//false,0,balance,risk,comm,false,false,0,dayTotalPips);
 																		double res1 = TestPriceBufferGlobal$$.doTest("",dataNoise,maxMins,2009,2019,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																				false,0,balance,risk,comm,false,false,0,dayTotalPips);														
+																				false,0,balance,risk,comm,false,false,0,dayTotalPips,sp);														
 																		double res2 = TestPriceBufferGlobal$$.doTest("",dataNoise,maxMins,2010,2012,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																				false,0,balance,risk,comm,false,false,0,dayTotalPips);
+																				false,0,balance,risk,comm,false,false,0,dayTotalPips,sp);
 																		double res3 = TestPriceBufferGlobal$$.doTest("",dataNoise,maxMins,2013,2019,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																				false,0,balance,risk,comm,false,false,0,dayTotalPips);
+																				false,0,balance,risk,comm,false,false,0,dayTotalPips,sp);
 																		double res4 = TestPriceBufferGlobal$$.doTest("",dataNoise,maxMins,2016,2019,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																				false,0,balance,risk,comm,false,false,0,dayTotalPips);
+																				false,0,balance,risk,comm,false,false,0,dayTotalPips,sp);
 																		double res5 = TestPriceBufferGlobal$$.doTest("",dataNoise,maxMins,2004,2017,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																				false,0,balance,risk,comm,false,false,0,dayTotalPips);
+																				false,0,balance,risk,comm,false,false,0,dayTotalPips,sp);
 																		
 																		
 																		double avg = (res1+res2+res3+res4)/4;
+																		double avgMaxDD = MathUtils.average(maxDDs);
+																		double dt1 = Math.sqrt(MathUtils.variance(maxDDs));
+																		double var95 = avg+dt1*dt1;
 																		
 																		if (avg>=1.0){
 																			System.out.println("RESULTS: "+header+" ||| "+totalPositives
@@ -753,6 +772,8 @@ public class TestPriceBufferGlobal$$ {
 																				+" "+PrintUtils.Print3dec(res5,  false)
 																				+" || "
 																				+" "+PrintUtils.Print3dec(avg,  false)
+																				+" || "+PrintUtils.Print3dec(avgMaxDD,  false)
+																				+" "+PrintUtils.Print3dec(var95,  false)
 																				);	
 																		}
 																			

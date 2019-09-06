@@ -78,12 +78,13 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 					if (q.getOpen5()>=sma){
 						pips = q.getOpen5()-p.getEntry();
 						isClosed = true;
-						//System.out.println("[long sl touched] "+pips+" "+(p.getTp()-p.getEntry()));
+						//System.out.println("[long sl touched] "+pips+" "+pips);
 					}
 				}else if (p.getPositionType()==PositionType.SHORT){
 					if (q.getOpen5()<=sma){
 						pips = p.getEntry()-q.getOpen5();
 						isClosed = true;
+						//System.out.println("[short sl touched] "+pips+" "+pips);
 					}
 				}
 			}
@@ -101,7 +102,8 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 	}
 
 	@Override
-	public int doEvaluateEntries(ArrayList<QuoteShort> data, int i,
+	public int doEvaluateEntries(ArrayList<QuoteShort> data,
+			ArrayList<Integer> maxMins, int i,
 			ArrayList<PositionShort> positions, boolean canTrade,
 			StratPerformance sp) {
 				
@@ -144,7 +146,7 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 				//pos.setTp((int) (q.getOpen5()-1*distance));
 				//System.out.println("[open short] "+q.getOpen5()+" "+sma+" "+pos.getSl());
 			}
-			//calculate miniLots
+			//calculate miniLots 0.01
 			int minPips = (int) (fsl*pipsAtr); 
 			double riskPosition = sp.getActualBalance()*risk*1.0/100.0;
 			double riskPip = riskPosition/(minPips*0.1);
@@ -204,11 +206,10 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 		
 		//String pathEURUSD = path0+"EURUSD_1 Min_Bid_2009.01.01_2019.04.01.csv";
 		//String pathEURUSD = path0+"EURUSD_4 Hours_Bid_2003.12.31_2019.07.23.csv";
-<<<<<<< HEAD
-		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.08.06.csv";
-=======
-		String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.08.06.csv";
->>>>>>> branch 'master' of https://github.com/davidautentico/FXEncog.git
+
+		String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.09.06.csv";
+		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.09.03.csv";
+
 		//String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2009.01.01_2019.08.04.csv";
 		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2004.01.01_2019.04.06.csv";
 		String pathNews = path0+"News.csv";
@@ -252,26 +253,13 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 			//18 0.14 1.00 13 0.15
 			for (int h1=0;h1<=0;h1++){
 				int h2 = h1+8;
-<<<<<<< HEAD
-				for (int nbars=50;nbars<=50;nbars+=1){
-					for (double fdiff=0.01;fdiff<=0.40;fdiff+=0.01){
-=======
 				for (int nbars=18;nbars<=18;nbars+=1){
-					for (double fdiff=0.16;fdiff<=0.16;fdiff+=0.01){
->>>>>>> branch 'master' of https://github.com/davidautentico/FXEncog.git
+					for (double fdiff=0.20;fdiff<=0.20;fdiff+=0.01){
 						for (double fsl=0.60;fsl<=0.60;fsl+=0.05){	
-							//double risk = 0.05;
-<<<<<<< HEAD
-							for (double risk=0.01;risk<=0.01;risk+=0.01){
-								for (int maxPositions=200;maxPositions<=200;maxPositions+=10){
+							for (double risk=1.00;risk<=1.0;risk+=0.10){
+								for (int maxPositions=1;maxPositions<=40;maxPositions+=1){
 									for (int y1=2009;y1<=2009;y1++){
 										int y2 = y1+10;
-=======
-							for (double risk=0.10;risk<=0.10;risk+=0.01){
-								for (int maxPositions=200;maxPositions<=200;maxPositions+=10){
-									for (int y1=2009;y1<=2019;y1++){
-										int y2 = y1+0;
->>>>>>> branch 'master' of https://github.com/davidautentico/FXEncog.git
 										for (int m1=0;m1<=0;m1+=1){
 											int m2 = m1+11;
 											mm = new MeanRevertingSMA2();
@@ -288,7 +276,7 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 											+" "+h1+" "+h2
 											+" "+y1+" "+y2
 											;
-											mm.doTest(header,data, y1, y2, m1, m2, sp, 0,0);		
+											mm.doTest(header,data,maxMins, y1, y2, m1, m2, sp, 0,0);		
 											try {
 												Sizeof.runGC ();
 											} catch (Exception e) {

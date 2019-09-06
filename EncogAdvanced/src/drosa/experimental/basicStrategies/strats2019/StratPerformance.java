@@ -204,7 +204,7 @@ public class StratPerformance {
 				int microLots = StratPerformance.getMiniLots(actualBal, sl, risk);
 				
 				double old = actualBal;
-				actualBal  +=microLots*0.1*pips;
+				actualBal  +=microLots*0.1*(pips*0.1);//precio 1 pip * pips reales
 				/*System.out.println(microLots+" "+pips
 						+" || "+old
 						+" || "+actualBal
@@ -275,7 +275,7 @@ public class StratPerformance {
 		maxAdversionAcc += maxAdversion;
 		maxAdversionAvg = maxAdversionAcc*0.1/trades;
 		
-		actualBalance += miniLots*0.1*pips;
+		actualBalance += miniLots*0.1*pips*0.1;
 		if (actualBalance>=maxBalance){
 			maxBalance = actualBalance;
 		}else{
@@ -285,6 +285,7 @@ public class StratPerformance {
 			}
 		}	
 		
+		//System.out.println("[new closed] "+pips+" "+actualBalance+" || "+miniLots);
 		profitPer = actualBalance*100.0/initialBalance-100.0;
 		
 		int m = cal.get(Calendar.MONTH);

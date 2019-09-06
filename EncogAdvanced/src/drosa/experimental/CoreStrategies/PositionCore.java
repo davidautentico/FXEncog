@@ -18,6 +18,7 @@ public class PositionCore {
 		int entryIndex = 0;
 		int maxIndex = 0;
 		double pipValue = 0;
+		int microLots = 0;
 		
 		PositionType positionType = PositionType.NONE;
 		PositionStatus positionStatus = PositionStatus.NONE;
@@ -29,6 +30,12 @@ public class PositionCore {
 		
 		
 		
+		public int getMicroLots() {
+			return microLots;
+		}
+		public void setMicroLots(int micrtoLots) {
+			this.microLots = micrtoLots;
+		}
 		public double getPipValue() {
 			return pipValue;
 		}
