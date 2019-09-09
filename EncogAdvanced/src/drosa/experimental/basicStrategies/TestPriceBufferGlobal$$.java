@@ -502,7 +502,7 @@ public class TestPriceBufferGlobal$$ {
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_5 Secs_Bid_2012.01.01_2017.01.04.csv";
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_1 Min_Bid_2008.12.31_2017.02.13.csv";
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_1 Min_Bid_2003.05.04_2017.07.31.csv";
-		String pathEURUSD = "C:\\fxdata\\EURUSD_5 Mins_Bid_2004.01.01_2019.09.03.csv";
+		String pathEURUSD = "C:\\fxdata\\EURUSD_5 Mins_Bid_2004.01.01_2019.09.06.csv";
 		//String pathEURUSD = "C:\\fxdata\\EURUSD_UTC_1 Min_Bid_2008.12.31_2018.01.04.csv";
 		
 		ArrayList<String> paths = new ArrayList<String>();
@@ -712,10 +712,10 @@ public class TestPriceBufferGlobal$$ {
 															for (int sc=0;sc<=0;sc++){
 																for (int hf=24;hf<=24;hf++){
 																	for (double aStd=0.0;aStd<=0.0;aStd+=1.0){
-																		for (int y1=2009;y1<=2019;y1+=1){
+																		for (int y1=2004;y1<=2019;y1+=1){
 																			int y2 = y1+0;
-																			for (int m1=0;m1<=11;m1+=1){
-																				int m2 = m1+00;
+																			for (int m1=0;m1<=6;m1+=6){
+																				int m2 = m1+5;
 																				String header1 = y1+" "+y2+" "+m1+" "+m2+" "+maxTrades
 																						+" "+PrintUtils.Print2dec(risk, false)
 																						;

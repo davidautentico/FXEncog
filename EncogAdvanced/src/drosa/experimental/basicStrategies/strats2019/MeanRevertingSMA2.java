@@ -256,8 +256,8 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 				for (int nbars=18;nbars<=18;nbars+=1){
 					for (double fdiff=0.20;fdiff<=0.20;fdiff+=0.01){
 						for (double fsl=0.60;fsl<=0.60;fsl+=0.05){	
-							for (double risk=1.00;risk<=1.0;risk+=0.10){
-								for (int maxPositions=1;maxPositions<=40;maxPositions+=1){
+							for (double risk=0.1;risk<=2.0;risk+=0.10){
+								for (int maxPositions=15;maxPositions<=15;maxPositions+=1){
 									for (int y1=2009;y1<=2009;y1++){
 										int y2 = y1+10;
 										for (int m1=0;m1<=0;m1+=1){
