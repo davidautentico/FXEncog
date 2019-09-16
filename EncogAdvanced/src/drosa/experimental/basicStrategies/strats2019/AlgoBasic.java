@@ -92,6 +92,10 @@ public abstract class AlgoBasic {
 		//sp.setInitialBalance(20000);
 		//bucle de datos
 		boolean dayTraded = false;
+		int maxDayLossAcc=0;
+		double maxDayLossAcc$$=0;
+		double dayBalance = 0;
+		int maxDayPositions = 0;
 		for (int i=1;i<data.size();i++){
 			QuoteShort q = data.get(i);
 			QuoteShort q1 = data.get(i-1);
@@ -116,10 +120,20 @@ public abstract class AlgoBasic {
 					
 					int actualDayPips = sp.getWinPips()-sp.getLostPips();
 					int diffPips = actualDayPips-lastDayPips;
-					//if (diffPips<0)
-					//System.out.println(DateUtils.datePrint(cal1)+" "+diffPips);
+					/*if (maxDayPositions>0)
+					System.out.println(DateUtils.datePrint(cal1)
+							+" "+maxDayPositions
+							+" "+diffPips
+							+" "+maxDayLossAcc
+							+" || "+PrintUtils.Print2dec(maxDayLossAcc$$, false)
+							+" || "+PrintUtils.Print2dec(maxDayLossAcc$$*100.0/dayBalance, false)
+							);*/
 					lastDayPips = actualDayPips;
 				}
+				dayBalance = sp.getActualBalance();
+				maxDayLossAcc=0;
+				maxDayLossAcc$$ = 0;
+				maxDayPositions = 0;
 				dayTraded = false;
 				lastDay = day;
 				high = -1;
@@ -134,6 +148,9 @@ public abstract class AlgoBasic {
 			
 			//evaluamos SL y Tp			
 			int j = 0;
+			int lossAccumulated = 0;
+			double lossAccumulated$$ = 0;
+			if (positions.size()>maxDayPositions) maxDayPositions = positions.size();
 			while (j<positions.size()){
 				PositionShort p = positions.get(j);
 				boolean isClosed = false;
@@ -141,6 +158,7 @@ public abstract class AlgoBasic {
 				if (p.getPositionStatus()==PositionStatus.OPEN){
 					if (p.getPositionType()==PositionType.LONG){
 						int testValue = q.getLow5();
+						pips = q.getClose5()-p.getEntry();
 						if (
 								testValue<=p.getSl() && p.getSl()>=0){
 							pips = p.getSl()-p.getEntry();
@@ -156,6 +174,7 @@ public abstract class AlgoBasic {
 						}
 					}else if (p.getPositionType()==PositionType.SHORT){
 						int testValue = q.getHigh5();
+						pips = -q.getClose5()+p.getEntry();
 						if (testValue>=p.getSl() && p.getSl()>=0){
 							pips = -p.getSl()+p.getEntry();
 							isClosed = true;
@@ -177,6 +196,12 @@ public abstract class AlgoBasic {
 					sp.addTrade(p.getMicroLots(),pips,pipsSL,p.getMaxLoss(),p.getTransactionCosts(),cal);
 					positions.remove(j);
 				}else{
+					int pipsSL = Math.abs(p.getEntry()-p.getSl());
+					//System.out.println(pipsSL+" || "+p.getMicroLots());
+					lossAccumulated += pips;
+					lossAccumulated$$ += pips*p.getMicroLots()*0.10*0.10; 
+					if (lossAccumulated<maxDayLossAcc) maxDayLossAcc=lossAccumulated;
+					if (lossAccumulated$$<maxDayLossAcc$$) maxDayLossAcc$$ =lossAccumulated$$;
 					j++;
 				}
 			}
