@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import drosa.utils.MathUtils;
+import drosa.utils.PrintUtils;
 
 public class StratPerformance {
 	
@@ -16,6 +17,8 @@ public class StratPerformance {
 	double avgPips  = 0.0;
 	int winPips = 0;
 	int lostPips = 0;
+	double winPips$ = 0;
+	double lostPips$ = 0;
 	int trades = 0;
 	int wins = 0;
 	int losses = 0;
@@ -25,6 +28,8 @@ public class StratPerformance {
 	double initialBalance = 0;
 	double maxBalance = 0;
 	double actualBalance = 0;
+	double actualEquitity = 0;
+	double maxEquitity = 0;
 	double maxDD = 0;
 	double profitPer = 0.0;
 	
@@ -32,6 +37,50 @@ public class StratPerformance {
 	HashMap<Integer,ArrayList<Integer>> monthTradesP = new HashMap<Integer,ArrayList<Integer>>();
 	HashMap<Integer,ArrayList<Integer>> monthTradesSL = new HashMap<Integer,ArrayList<Integer>>();
 	
+	
+	
+	public double getWinPips$() {
+		return winPips$;
+	}
+	public void setWinPips$(double winPips$) {
+		this.winPips$ = winPips$;
+	}
+	public double getLostPips$() {
+		return lostPips$;
+	}
+	public void setLostPips$(double lostPips$) {
+		this.lostPips$ = lostPips$;
+	}
+	public double getActualEquitity() {
+		return actualEquitity;
+	}
+	public void setActualEquitity(double actualEquitity) {
+		this.actualEquitity = actualEquitity;
+	}
+	public double getMaxEquitity() {
+		return maxEquitity;
+	}
+	public void setMaxEquitity(double maxEquitity) {
+		this.maxEquitity = maxEquitity;
+	}
+	public HashMap<Integer, ArrayList<Double>> getMonthData() {
+		return monthData;
+	}
+	public void setMonthData(HashMap<Integer, ArrayList<Double>> monthData) {
+		this.monthData = monthData;
+	}
+	public HashMap<Integer, ArrayList<Integer>> getMonthTradesP() {
+		return monthTradesP;
+	}
+	public void setMonthTradesP(HashMap<Integer, ArrayList<Integer>> monthTradesP) {
+		this.monthTradesP = monthTradesP;
+	}
+	public HashMap<Integer, ArrayList<Integer>> getMonthTradesSL() {
+		return monthTradesSL;
+	}
+	public void setMonthTradesSL(HashMap<Integer, ArrayList<Integer>> monthTradesSL) {
+		this.monthTradesSL = monthTradesSL;
+	}
 	public double getPf() {
 		return pf;
 	}
@@ -100,6 +149,8 @@ public class StratPerformance {
 		this.initialBalance = initialBalance;
 		this.actualBalance = initialBalance;
 		this.maxBalance	= initialBalance;
+		this.actualEquitity = initialBalance;
+		this.maxEquitity = initialBalance;
 	}
 	public double getMaxBalance() {
 		return maxBalance;
@@ -134,6 +185,31 @@ public class StratPerformance {
 		this.maxAdversionAvg = maxAdversionAvg;
 	}
 	
+	public double getMonthDataWinPer(){
+		int total = 0;
+		int wins = 0;
+		double val = 0;
+		ArrayList<Double> values = new ArrayList<Double>();
+		
+		Object[] keys = monthTradesP.keySet().toArray();
+		Arrays.sort(keys);
+		
+		double lastBalance = initialBalance;
+		for(Object key : keys) {
+			ArrayList<Integer> pipsA =  monthTradesP.get(key);
+			int acc= 0;
+			for (int i=0;i<pipsA.size();i++){
+				acc += pipsA.get(i);
+			}
+			if (pipsA.size()>0){
+				total++;
+				if (acc>0) wins++;
+			}
+		}
+		
+		
+		return wins*100.0/total;
+	}
 	//avgDD	
 	public double getMonthDataDD(double dt){
 		
@@ -241,6 +317,10 @@ public class StratPerformance {
 	}
 	
 	public void reset() {
+		actualBalance = 0;
+		actualEquitity = 0;
+		maxBalance = 0;
+		maxEquitity = 0;
 		pf = 0.0;
 		pfYears = 0.0;
 		years = 0;
@@ -248,6 +328,8 @@ public class StratPerformance {
 		 maxDD = 0;		
 		winPips = 0;
 		lostPips = 0;
+		winPips$ = 0;
+		lostPips$ = 0;
 		trades = 0;
 		wins = 0;
 		losses = 0;
@@ -262,6 +344,59 @@ public class StratPerformance {
 			int maxAdversion,
 			int comm,
 			Calendar cal) {
+		trades++;
+		pips-=comm;
+		if (pips>=0){
+			winPips += pips;
+			wins++;
+			winPips$ += miniLots*0.1*pips*0.1;
+		}else{
+			lostPips += -pips;
+			losses++;
+			lostPips$ += -miniLots*0.1*pips*0.1;
+		}		
+		//averagemaxloss
+		maxAdversionAcc += maxAdversion;
+		maxAdversionAvg = maxAdversionAcc*0.1/trades;
+		
+		actualBalance += miniLots*0.1*pips*0.1;
+		if (actualBalance>=maxBalance){
+			maxBalance = actualBalance;
+		}else{
+			double actualDD = 100.0-actualBalance*100.0/maxBalance;
+			if (actualDD>=maxDD){
+				maxDD = actualDD;
+			}
+		}	
+				
+		//System.out.println("[new closed] "+pips+" "+actualBalance+" || "+miniLots);
+		profitPer = actualBalance*100.0/initialBalance-100.0;
+		
+		int m = cal.get(Calendar.MONTH);
+		int y = cal.get(Calendar.YEAR);
+		
+		int key = y*100+m;
+		if (!monthData.containsKey(key)){
+			monthData.put(key, new ArrayList<Double>());
+			monthTradesP.put(key, new ArrayList<Integer>());
+			monthTradesSL.put(key, new ArrayList<Integer>());
+		}
+
+		monthData.get(key).add(actualBalance);
+		monthTradesP.get(key).add(pips);
+		monthTradesSL.get(key).add(sl);
+		/*if (!monthData.containsKey(key)){
+			monthData.put(key, actualBalance);
+		}else{
+			monthData.p
+		}*/
+	}
+	
+	public void addTrade(long miniLots,
+			int pips,
+			int sl,//reward:risk
+			int maxAdversion,
+			int comm) {
 		trades++;
 		pips-=comm;
 		if (pips>=0){
@@ -287,26 +422,36 @@ public class StratPerformance {
 		
 		//System.out.println("[new closed] "+pips+" "+actualBalance+" || "+miniLots);
 		profitPer = actualBalance*100.0/initialBalance-100.0;
-		
-		int m = cal.get(Calendar.MONTH);
-		int y = cal.get(Calendar.YEAR);
-		
-		int key = y*100+m;
-		if (!monthData.containsKey(key)){
-			monthData.put(key, new ArrayList<Double>());
-			monthTradesP.put(key, new ArrayList<Integer>());
-			monthTradesSL.put(key, new ArrayList<Integer>());
-		}
-
-		monthData.get(key).add(actualBalance);
-		monthTradesP.get(key).add(pips);
-		monthTradesSL.get(key).add(sl);
-		/*if (!monthData.containsKey(key)){
-			monthData.put(key, actualBalance);
-		}else{
-			monthData.p
-		}*/
+	}
+	
+	public String toString() {
+		double winPer = this.wins*100.0/this.trades;
+		double pf = this.winPips*1.0/this.lostPips;
+		double avg = (this.winPips-this.lostPips)*1.0/this.trades;
+		return this.trades+" "+PrintUtils.Print2dec(winPer, false)+" "+PrintUtils.Print2dec(pf, false)+" "+PrintUtils.Print2dec(avg, false)
+		+" "+winPips+" "+lostPips
+		;
 	}
 	
 
+	public void resetEquitity() {
+		// TODO Auto-generated method stub
+		this.actualEquitity = this.actualBalance;
+	}
+	
+	public void updateEquitity(int miniPips,long miniLots) {
+		
+		double importe = miniLots*0.1*miniPips*0.1;
+		this.actualEquitity += importe;
+		//actualizamos equitity
+		actualEquitity += importe;
+		if (actualEquitity>=maxEquitity){
+			maxEquitity = actualEquitity;
+		}else{
+			double actualDD = 100.0-actualEquitity*100.0/maxEquitity;
+			if (actualDD>=maxDD){
+				maxDD = actualDD;
+			}
+		}	
+	}
 }

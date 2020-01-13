@@ -8,6 +8,9 @@ import drosa.utils.PrintUtils;
 
 public class NBA {
 
+	public static void readBBDD(String folder){
+		HashMap<String,Team2019> nba = new HashMap<String,Team2019>();
+	}
 	
 	
 	public static void main(String[] args) {

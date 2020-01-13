@@ -2245,9 +2245,7 @@ public static void setStreakInfo(String header,BetStats betStats){
 		}else{
 			testMatches = SportsInsight.readAndReorderNHL(folder2, yTest1, yTest2, 1, 0);
 		}
-		
-		
-		
+					
 		//System.out.println("total matches: "+testMatches.size());
 		
 		for (double afactor = factor1;afactor<=factor2;afactor+=0.04){
@@ -2300,7 +2298,7 @@ public static void setStreakInfo(String header,BetStats betStats){
 					hStreak = teamResults.get(hTeam);
 					aStreak = teamResults.get(aTeam);
 					
-					//System.out.println("[MATCH] "+m.toString()+" || "+hStreak+" "+aStreak);
+					System.out.println("[MATCH] "+m.toString()+" || "+hStreak+" "+aStreak);
 					
 					stake = 0;
 					cuota = 0.0;
@@ -2317,23 +2315,10 @@ public static void setStreakInfo(String header,BetStats betStats){
 					//aStreak<-3 hStreak==1 AwayOdds>=2.20 150 68.0% 3.14 BET = 1 (home)
 					if (true
 							//&& hTeam.contains("Edmonton Oilers")
-							&& aStreak>0
+							//&& aStreak>0
 							//&& hStats.getMaxLosses()>=afactor
-							&& hStreak==-5
-							//&& hStreak<=-2
-							//&& aStats.getMaxLosses()<=afactor
-							//&& aStats.getAvgNeg()>=afactor
-							//&& aStats.getAvgNeg()>=0.70
-							//&& hStats.getAvgPos()>=afactor
-							//&& m.getAwayOdds()>=2.30
-							//&& m.getHomeOdds()>=2.0
-							//&& m.getAwayOdds()>=afactor
-							//&& m.getHomeOdds()>=afactor1
-							//&& m.getHomeOdds()<=afactor
-							//&& hStats.getAvgGlobal()>=afactor
-							//&& aStats.getAvgPos()>=afactor
-							//&& -hStreak>=hStats.getAvgNeg()
-								){
+							&& (hStreak<=-2 || aStreak<=-2)
+						){
 					  //System.out.println(m.toString()+" || "+hStats.getMaxLosses()+" || "+hStreak+" "+aStreak);
 						stake = 1;
 						//cuota = 2.0;
@@ -2346,7 +2331,6 @@ public static void setStreakInfo(String header,BetStats betStats){
 					
 					if (stake==0){
 						if (true
-							//&& hStreak==-1
 							//&& hStreak>hStats.getAvgPos()
 							//&& aStreak<0
 							//&& hStats.getAvgPos()<=afactor	
@@ -2375,8 +2359,7 @@ public static void setStreakInfo(String header,BetStats betStats){
 						avgCuota += cuota;
 						totalBets++;
 					}
-					
-					
+										
 					//actualizamos streak
 					if (res==1){
 						if (hStreak>=0){
@@ -2407,14 +2390,6 @@ public static void setStreakInfo(String header,BetStats betStats){
 					historicalMatches.add(m);
 					boolean hdebug = false;
 					boolean adebug = false;
-					if (hTeam.equalsIgnoreCase("Pittsburgh Penguins")){
-						//System.out.println(hTeam+" - "+aTeam+" "+m.homeGoals+" "+m.awayGoals+" || "+historicalMatches.size());
-						//hdebug= true;
-					}
-					if (aTeam.equalsIgnoreCase("Pittsburgh Penguins")){
-						//System.out.println(hTeam+" - "+aTeam+" "+m.homeGoals+" "+m.awayGoals+" || "+historicalMatches.size());
-						//adebug= true;
-					}
 					StreakUtils.calculateStreaksTeam(historicalMatches, teamBetStats,hTeam,hdebug);
 					StreakUtils.calculateStreaksTeam(historicalMatches, teamBetStats,aTeam,adebug);
 				}
@@ -2442,17 +2417,164 @@ public static void setStreakInfo(String header,BetStats betStats){
 			}//jump
 		}//factor
 	}
+	
+	
+	public static void testSeries(
+			int yTest1,int yTest2,
+			boolean isSportInsight,int period,double thr){
+		
+		String folder = "C:\\nhl\\";
+		//String folder = "C:\\nhl\\oddsportal\\";		
+		String folder2 = "C:\\nhl\\sportsInsight\\";
+		
+		ArrayList<Match> testMatches = null;
+		if (!isSportInsight){
+			testMatches = NHL.readFromDisk(folder, yTest1, yTest2, 3, 0);
+		}else{
+			testMatches = SportsInsight.readAndReorderNHL(folder2, yTest1, yTest2, 1, 0);
+		}
+		
+		HashMap<String,HashMap<String,ArrayList<Integer>>> series = new HashMap<String,HashMap<String,ArrayList<Integer>>>();
+		
+		HashMap<String,ArrayList<Integer>> teamStats = new HashMap<String,ArrayList<Integer>>();
+		int wins = 0;
+		int losses = 0;
+
+		for (int i=0;i<testMatches.size();i++){			
+			Match m = testMatches.get(i);
+			String hTeam = m.getHomeTeam();
+			String aTeam = m.getAwayTeam();
+			int stake = 0;
+			double cuota = 0.0;
+			int teamBet = 0;
+			int res = m.getHomeGoals()>m.getAwayGoals()?1:0;
+			int resA = m.getHomeGoals()<m.getAwayGoals()?1:0;
+			
+			String serieHA = hTeam+" - "+aTeam;
+			String serieAH = aTeam+" - "+hTeam;
+			
+			if (!series.containsKey(hTeam)){
+				series.put(hTeam,new HashMap<String,ArrayList<Integer>>());
+			}
+			if (!series.containsKey(aTeam)){
+				series.put(aTeam,new HashMap<String,ArrayList<Integer>>());
+			}
+						
+			HashMap<String,ArrayList<Integer>> homeMatches = series.get(hTeam);
+			if (!homeMatches.containsKey(aTeam)){
+				homeMatches.put(aTeam, new ArrayList<Integer>());
+			}
+			ArrayList<Integer> hm = homeMatches.get(aTeam);
+			hm.add(res);
+			
+			HashMap<String,ArrayList<Integer>> awayMatches = series.get(aTeam);
+			if (!awayMatches.containsKey(hTeam)){
+				awayMatches.put(hTeam, new ArrayList<Integer>());
+			}
+			ArrayList<Integer> am = awayMatches.get(hTeam);
+			am.add(resA);
+			
+			if (!teamStats.containsKey(hTeam)){
+				teamStats.put(hTeam,new ArrayList<Integer>());
+			}
+			
+			if (!teamStats.containsKey(aTeam)){
+				teamStats.put(aTeam,new ArrayList<Integer>());
+			}
+			
+			//VEMOS P
+			ArrayList<Integer> arrh = teamStats.get(hTeam);
+			double avgH = MathUtils.average(arrh, arrh.size()-period, arrh.size()-1);
+			//away
+			ArrayList<Integer> arra = teamStats.get(aTeam);
+			double avgA = MathUtils.average(arra, arra.size()-period, arra.size()-1);
+			
+			/*if (avgH>=thr && avgA<0.40){
+				if (res==1) wins++;
+				else losses++;
+			}*/
+			
+			if (avgH<=0.25 && avgA>=thr){
+				if (resA==1) wins++;
+				else losses++;
+			}
+						
+			
+			arrh.add(res);
+			arra.add(resA);							
+		}
+		
+		//estudiamos las series
+		int cases = 0;
+		int winsS = 0;
+		int totalBets = 0;
+		int totalWins = 0;
+		int totalLosses = 0;
+		int teamWins = 0;
+		int teamLosses = 0;
+		Iterator it = series.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry pair = (Map.Entry)it.next();
+			String serie = (String) pair.getKey();
+			HashMap<String,ArrayList<Integer>> rivals = (HashMap<String,ArrayList<Integer>>) pair.getValue();
+
+			Iterator it2 = rivals.entrySet().iterator();
+			int total = 0;
+			while (it2.hasNext()) {
+				Map.Entry pair2 = (Map.Entry)it2.next();
+				String rival2 = (String) pair2.getKey();
+				ArrayList<Integer> results = (ArrayList<Integer>) pair2.getValue();
+												
+				total +=results.size();
+				int res0 = results.get(0);
+				if (res0==0
+						&& results.size()==4
+						){
+					cases++;
+					int resm = 0;
+					String resStr = results.get(0)+" ";
+					for (int i=1;i<results.size();i++){
+						resm += results.get(i); 
+						resStr+=" "+results.get(i);
+					}
+					
+					if (results.size()==3 && resm>=1
+							|| (results.size()==4 && resm>=2)
+							|| (results.size()==5 && resm>=2)
+							){
+						wins++;
+						
+						//System.out.println("[WIN] "+serie+" "+rival2+" || "+results.size()+" || "+resStr);						
+					}else{
+						//System.out.println("[LOSS] "+serie+" "+rival2+" || "+results.size()+" || "+resStr);	
+					}
+				}
+			}
+			//System.out.println(serie+" *** "+total);
+		}
+		totalBets = wins+losses;
+		System.out.println(period+" "+PrintUtils.Print2dec(thr, false)
+				+" || "+testMatches.size()+" "+totalBets +" "+PrintUtils.Print2dec(wins*100.0/totalBets, false)
+				);
+	}
+					
 
 	public static void main(String[] args) {
 		
 		
 		//NHL.test5(2016, 2016, false);
 		//NHL.test3(2006, 2016,1.4,3.0, true);
-		for (int y=2016;y<=2016;y++){
-			for (int y1=1976;y1<=2012;y1+=6)
-				NHL.test4(y-11,y-11,y1,y1+5,0.30,0.30,false);
+		/*for (int y=2016;y<=2016;y++){
+			for (int y1=2010;y1<=2010;y1+=6)
+				NHL.test4(y-11,y-11,y1,y1+9,0.30,0.30,false);
 			//NHL.test5(y, y, true);
+		}*/
+		for (int period=25;period<=25;period++){
+			for (double thr=0.1;thr<=0.9;thr+=0.05){
+				NHL.testSeries(2010,2015,false,period,thr);
+			}
 		}
+		
 		System.out.println("PROGRAMA FINALIZADO");
 	}
 

@@ -2,6 +2,7 @@ package drosa.experimental.basicStrategies.strats2019;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 
 import drosa.DAO.DAO;
 import drosa.data.DataProvider;
@@ -177,13 +178,174 @@ public class billyt2019 {
 				+" "+trades+" "+winSizes+" "+lostSizes
 				);
 	}
+	
+	
+	public static void dailyBreak2(
+			ArrayList<QuoteShort> data,
+			int y1,int y2,
+			int m1,int m2,
+			int tp,int sl
+			){
+		
+		Calendar cal = Calendar.getInstance();
+		QuoteShort q = null;
+		QuoteShort q1 = null;
+		QuoteShort qLast = null;
+		int lastDay = -1;
+		int month  = -1;
+		int high = -1;
+		int low = -1;
+		int lastHigh = -1;
+		int lastLow = -1;
+		int lastHigh2 = -1;
+		int lastLow2 = -1;
+		int totalDays=0;
+		int mode = 0;
+		int wins=0;
+		int losses= 0;
+		int count = 0;
+		int maxLosingStreak = 0;
+		int actualLosses = 0;
+		int breakNum = 0;
+		HashMap<Integer,ArrayList<Integer>> breakHash = new HashMap<Integer,ArrayList<Integer>>();
+		
+		ArrayList<Integer> seq = new ArrayList<Integer>();
+		boolean isNewDay = false;
+		int highTest = -1;
+		int lowTest = -1;
+		for (int i=1;i<data.size()-1;i++){
+			q1 = data.get(i-1);
+			q = data.get(i);
+			QuoteShort q_1 = data.get(i+1);
+			QuoteShort.getCalendar(cal, q);
+			
+			int y = cal.get(Calendar.YEAR);
+			int m = cal.get(Calendar.MONTH);
+			int day = cal.get(Calendar.DAY_OF_YEAR);
+			int h = cal.get(Calendar.HOUR_OF_DAY);
+			int min = cal.get(Calendar.MINUTE);
+			int dayWeek = cal.get(Calendar.DAY_OF_WEEK);
+			int week = cal.get(Calendar.WEEK_OF_YEAR);
+			month = cal.get(Calendar.MONTH);
+			 			 
+			if (y>y2) break;
+			
+			if (y<y1 || y>y2) continue;
+			
+			if (y==y1 && m<m1) continue;
+			if (y==y2 && m>m2) continue;
+						
+			if (day!=lastDay){				
+				if (high!=-1){
+					lastHigh2 = lastHigh;
+					lastLow2 = lastLow;
+					lastHigh = high;
+					lastLow = low;
+				}				
+				high = -1;
+				low = -1;
+				lastDay = day;				
+				totalDays++;
+				isNewDay = true;
+			}
+			
+			if (mode==0 
+					//&& h<10
+					) {
+				highTest = lastHigh;
+				lowTest = lastLow;
+				
+				if (q.getOpen5()<=highTest 
+						&& q.getHigh5()>=highTest 
+						&& highTest !=-1
+					) {
+					mode = 1;
+					if (isNewDay) breakNum = 0;
+					breakNum++;					
+					if (!breakHash.containsKey(breakNum)){
+						breakHash.put(breakNum, new ArrayList<Integer>());
+					}
+					isNewDay = false;
+				}else if (q.getOpen5()>=lowTest
+						&& q.getLow5()<=lowTest 
+						&& lowTest !=-1
+					) {
+					mode = -1;
+					if (isNewDay) breakNum = 0;
+					breakNum++;
+					if (!breakHash.containsKey(breakNum)){
+						breakHash.put(breakNum, new ArrayList<Integer>());
+					}
+					isNewDay = false;
+				} 
+			}
+			
+			if (mode==1) {
+				if (q.getHigh5()>=highTest+tp) {
+					breakHash.get(breakNum).add(1);
+					mode = 0;
+				}else if (q.getLow5()<=highTest-sl) {
+					breakHash.get(breakNum).add(0);
+					mode = 0;
+				}
+			}else if (mode==-1) {
+				if (q.getLow5()<=lowTest-tp) {
+					breakHash.get(breakNum).add(1);
+					mode = 0;
+				}else if (q.getHigh5()>=lowTest+sl) {
+					breakHash.get(breakNum).add(0);
+					mode = 0;
+				}
+			}
+				
+			if (high==-1 || q.getHigh5()>=high) high = q.getHigh5();
+			if (low==-1 || q.getLow5()<=low) low = q.getLow5();			
+		}
+		
+		String resStr="";
+		
+		for (int i=1;i<=10;i++) {
+			if (!breakHash.containsKey(i)) break;
+			ArrayList<Integer> res = breakHash.get(i);			
+			double resPer = MathUtils.average(res, 0,res.size()-1)*100.0;
+			resStr += res.size()+" "+PrintUtils.Print2dec(resPer, false)+" "+PrintUtils.Print2dec(tp*resPer/((100.0-resPer)*sl), false)+" || ";
+		}
+		
+		ArrayList<Integer> res = breakHash.get(1);	
+		int cases0=0;
+		int cases00=0;
+		int uwin = 0;
+		int ulosses = 0;
+		double stake = 1;
+		for (int i=5;i<res.size();i++) {
+			int res_4 =res.get(i-4);
+			int res_3 =res.get(i-3);
+			int res_2 =res.get(i-2);
+			int res_1 =res.get(i-1);
+			int res0 =res.get(i);
+			System.out.println(res.get(i));
+			if (res_1==0 
+					&& res_2==0 
+					&& res_3==0
+					//&& res_4==0
+					) {
+				cases0++;
+				if (res0==0) {
+					cases00++;
+				}
+			}			
+		}
+		System.out.println(res.size()+" "+cases0+" "+PrintUtils.Print2dec(cases00*100.0/cases0,false)
+			+" || "+PrintUtils.Print2dec(100.0-cases00*100.0/cases0,false));		
+		System.out.println(resStr);
+	}
 
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 
 		String path0 ="C:\\fxdata\\";
 		//String pathEURUSD1801 = path0+"eurusd_5 Mins_Bid_2009.01.01_2018.12.27.csv";
-		String pathEURUSD1801 = path0+"EURUSD_5 Mins_Bid_2009.01.01_2018.12.27.csv";
+		String pathEURUSD1801 = path0+"usdcad_5 Mins_Bid_2009.01.01_2019.10.07.csv";
 		//String pathEURUSD1801 = path0+"EURUSD_5 Mins_Bid_2009.01.01_2018.12.26.csv";
 		ArrayList<String> paths = new ArrayList<String>();
 		/*paths.add(pathEURUSD170);
@@ -248,12 +410,12 @@ public class billyt2019 {
 			System.out.println("Leidos ticks: "+data.size());
 		
 			for (int tp=100;tp<=100;tp+=10){
-				for (int sl=(int) (4.0*tp);sl<=4.0*tp;sl+=1*tp){
+				for (int sl=(int) (6.0*tp);sl<=6.0*tp;sl+=1*tp){
 					//for (int sl=200;sl<=200;sl+=10){
 						//for (int tp=(int) (3.0*sl);tp<=3.0*sl;tp+=1*sl){
-							for (int nBack=12;nBack<=288;nBack+=12){
-								for (int minDist=500;minDist<=500;minDist+=100){
-									billyt2019.dailyBreak(data, 2009, 2018, 01, 11, tp, sl,nBack,minDist);
+							for (int nBack=0;nBack<=0;nBack+=12){
+								for (int minDist=0;minDist<=0;minDist+=100){
+									billyt2019.dailyBreak2(data, 2009, 2019, 01, 11, tp, sl);
 								}
 							}							
 						}

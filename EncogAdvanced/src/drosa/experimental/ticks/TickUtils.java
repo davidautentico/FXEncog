@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -48,9 +49,7 @@ public class TickUtils {
         String minuteBar = values[6];        
         String highMinute = values[7];
         String lowMinute = values[8];
-        
-		
-		
+        				
 		//System.out.println(price+" "+vol+" "+bid+" "+ask);
         Tick t = new Tick();
 		t.setDay(day);
@@ -68,6 +67,41 @@ public class TickUtils {
 		t.setMinuteHigh(Integer.valueOf(highMinute));
 		t.setMinuteLow(Integer.valueOf(lowMinute));
 		//System.out.println(t.toString());
+		
+		return t;
+	}
+	
+	public static Tick decodeDave2(String linea){
+		
+		
+		String[] values = linea.split(" ");
+		
+		String dateStr = values[0].trim();
+        String timeStr = values[1].trim();
+        short year  = Short.valueOf(dateStr.substring(6,10));
+		byte day = Byte.valueOf(dateStr.substring(0,2));
+		byte month   = Byte.valueOf(dateStr.substring(3,5));
+					
+		byte hh = Byte.valueOf(timeStr.substring(0,2));
+		byte mm = Byte.valueOf(timeStr.substring(3,5));
+        byte ss = Byte.valueOf(timeStr.substring(6,8));
+		
+        String price = values[2];
+        String vol = values[3]; 
+        String bid = values[4];
+        String ask = values[5];
+		//System.out.println(price+" "+vol+" "+bid+" "+ask);
+        Tick t = new Tick();
+		t.setDay(day);
+		t.setMonth(month);
+		t.setYear(year);
+		t.setHour(hh);
+		t.setMin(mm);
+		t.setSec(Byte.valueOf(ss));
+		t.setPrice(Integer.valueOf(price));
+		t.setVolume(Integer.valueOf(vol));
+		t.setBid(Integer.valueOf(bid));
+		t.setAsk(Integer.valueOf(ask));
 		
 		return t;
 	}
@@ -92,10 +126,7 @@ public class TickUtils {
         String bid = QuoteShort.fillES(values[3]);
         String ask = QuoteShort.fillES(values[4]);
         String vol = values[5];       
-        
-        
-		
-		
+               			
 		//System.out.println(price+" "+vol+" "+bid+" "+ask);
         //Tick t = new Tick();
 		t.setDay(day);
@@ -257,13 +288,21 @@ public class TickUtils {
 		return data;
 	}
 	
-	public static ArrayList<Tick> readFastTicksKibot(String fileName,int y1,int y2,boolean onlyChanges){
+	public static ArrayList<Tick> readFastTicksKibot(String fileName,
+			int y1,int y2,
+			int m1,int m2,
+			boolean onlyChanges
+	){
 		ArrayList<Tick> data = new  ArrayList<Tick>();
 			
 		File archivo = null;
 		FileReader fr = null;
 		BufferedReader br = null;
-
+		Calendar cal = Calendar.getInstance();
+		Calendar from = Calendar.getInstance();
+		Calendar to = Calendar.getInstance();
+		from.set(y1,m1, 1);
+		to.set(y2,m2,30);
 		try {
 			// Apertura del fichero y creacion de BufferedReader para poder
 		    // hacer una lectura comoda (disponer del metodo readLine()).
@@ -286,13 +325,18 @@ public class TickUtils {
 	            {
 	            	short y= Short.valueOf(line.substring(6,10));
 		        	short m= Short.valueOf(line.substring(0,2));
+		        	short dd= Short.valueOf(line.substring(3,5));
 	            	j++;
 		        	if (j%1000000 == 0){
 		        		System.out.println("leido: "+j+" || "+m+" "+y);
 		        	}
+		        	cal.set(y,m-1,dd);
 		        	
 		        	if(y<y1) continue;
 		        	if (y>y2) break;
+		        	if (cal.compareTo(from)<0) continue;
+		        	if (cal.compareTo(to)>0) break;
+		        	
 		        	//if (m!=11) continue;
 		        	//out.println(line);
 		        	Tick t = TickUtils.decodeKibot(line,y1,y2);
@@ -344,7 +388,7 @@ public class TickUtils {
 	}
 	
 	public static void savePrices(String fileName,int y1,int y2) throws FileNotFoundException{
-		ArrayList<Tick> data = TickUtils.readFastTicksKibot(fileName,y1,y1,false);
+		ArrayList<Tick> data = TickUtils.readFastTicksKibot(fileName,y1,y1,0,11,false);
 		ArrayList<Integer> maxMins = TickUtils.calculateMaxMinTime(data);
 		try(  PrintWriter out = new PrintWriter(fileName+"_changes.txt")  ){
 			for (int d=0;d<data.size();d++){
@@ -374,7 +418,7 @@ public class TickUtils {
 		//maxMins.clear();
 	}
 	
-	public static ArrayList<Tick> readTicksDaveMinutes(String fileName,int y1,int y2){
+	public static ArrayList<Tick> readTicksDaveMinutes(String fileName,int y1,int y2,int v){
 		ArrayList<Tick> data = new  ArrayList<Tick>();
 		
 
@@ -396,7 +440,10 @@ public class TickUtils {
 		            	short y= Short.valueOf(line.substring(6,10));
 			        	if (y<y1) continue;
 			        	if (y>y2) break;
-			        	Tick t = TickUtils.decodeDave(line);
+			        	Tick t = null;
+			        	if (v==1)
+			        		t = TickUtils.decodeDave(line);
+			        	else t = TickUtils.decodeDave2(line);
 			        	if (t==null) continue;
 			        	data.add(t);
 	            	}catch(Exception e){
@@ -411,7 +458,7 @@ public class TickUtils {
 	 
 	        long endTime = System.nanoTime();
 	        long elapsedTimeInMillis = TimeUnit.MILLISECONDS.convert((endTime - startTime), TimeUnit.NANOSECONDS);
-	        System.out.println("Total elapsed time: " + elapsedTimeInMillis);
+	       // System.out.println("Total elapsed time: " + elapsedTimeInMillis);
 	    }catch(Exception e){
 	    	e.printStackTrace();
 	    }finally{

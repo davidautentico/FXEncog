@@ -3339,7 +3339,7 @@ public class DaveTrade2019 {
 		
 		String path0 ="C:\\fxdata\\";
 		
-		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2004.01.01_2019.08.21.csv";
+		String pathEURUSD = path0+"EURGBP_5 Mins_Bid_2009.01.01_2019.10.07.csv";
 		
 		//String pathEURUSD = path0+"EURUSD_15 Mins_Bid_2009.01.01_2018.12.12.csv";
 		
@@ -3492,8 +3492,8 @@ public class DaveTrade2019 {
 											;
 								//for (int he=h;he<23;he++)
 									//strat.set(he,str);
-								for (int y1=2004;y1<=2019;y1+=1){
-									int y2 = y1+0;	
+								for (int y1=2009;y1<=2009;y1+=1){
+									int y2 = y1+10;	
 									for (int m1=0;m1<=0;m1+=6){
 										int m2 = m1+11;
 										if (m2>11){

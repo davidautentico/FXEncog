@@ -161,14 +161,14 @@ public class DataUtils {
         double bidVolume = 0;
         
         
-        double askdouble= Double.valueOf(linea.split(" ")[2].replace(",", "."));            
+        double askdouble= Double.valueOf(linea.split(";")[1].replace(",", "."));            
 		String delimiter = ".";
-		if (linea.split(" ")[2].contains(",") || linea.split(" ")[3].contains(",")){
+		if (linea.split(";")[1].contains(",") || linea.split(";")[2].contains(",")){
 			delimiter = ",";
 		}
 		
-		String askVolStr = linea.split(" ")[4].replace(",", ".");
-        String bidVolStr = linea.split(" ")[5].replace(",", ".");
+		String askVolStr = linea.split(";")[3].replace(",", ".");
+        String bidVolStr = linea.split(";")[4].replace(",", ".");
         
         try{
             askVolume	= Double.valueOf(askVolStr);
@@ -179,8 +179,8 @@ public class DataUtils {
         
 		 if (askdouble<10.0){
 			 //System.out.println(linea.split(" ")[2]);
-	            String askStr = linea.split(" ")[2].replace(delimiter, "");
-	            String bidStr = linea.split(" ")[3].replace(delimiter, "");
+	            String askStr = linea.split(";")[1].replace(delimiter, "");
+	            String bidStr = linea.split(";")[2].replace(delimiter, "");
 	            
 	            askStr = QuoteShort.fill5(askStr);
 	            bidStr = QuoteShort.fill5(bidStr);
@@ -193,11 +193,11 @@ public class DataUtils {
 	            }
          }else{
          	//System.out.println("A CONVERTIR: "+linea);
-         		String[] valuesA = linea.split(" ")[2].split(delimiter);
-         		String[] valuesB = linea.split(" ")[3].split(delimiter);
+         		String[] valuesA = linea.split(";")[1].split(delimiter);
+         		String[] valuesB = linea.split(";")[2].split(delimiter);
          		if (delimiter=="."){
-         			valuesA = linea.split(" ")[2].split("\\.");
-             		valuesB = linea.split(" ")[3].split("\\.");
+         			valuesA = linea.split(";")[1].split("\\.");
+             		valuesB = linea.split(";")[2].split("\\.");
          		}
          		         		
          		ask 	= convert3(valuesA); 

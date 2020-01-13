@@ -80,8 +80,16 @@ public class TestLines {
 	        	QuoteShort q = data.get(i);
 	        	//QuoteShort qNew = new QuoteShort();
 	        	//qNew.copy(q);
-	        	QuoteShort.getCalendar(cal, q);	        	
+	        	QuoteShort.getCalendar(cal, q);	
+	        	int h = cal.get(Calendar.HOUR_OF_DAY);
 	            int offset = DateUtils.calculatePepperGMTOffset(cal);
+	            
+	           /* if (offset>0 
+	            		&& cal.get(Calendar.DAY_OF_WEEK)==Calendar.FRIDAY
+	            		
+	            		) {
+	            	offset += 48;//para pasar el fin de semana
+	            }*/
 	            //System.out.println("cal antes: "+DateUtils.datePrint(cal));
 	            cal.add(Calendar.HOUR_OF_DAY, offset);
 	            //System.out.println("cal despues: "+DateUtils.datePrint(cal)+' '+offset);

@@ -1,5 +1,7 @@
 package drosa.experimental.CoreStrategies;
 
+import drosa.utils.PrintUtils;
+
 public class StrategyConfig {
 	
 	boolean enabled = false;
@@ -9,6 +11,9 @@ public class StrategyConfig {
 	int sl;
 	int barsBack;
 	int maxBars;
+	double tpf;
+	double slf;
+	double risk;
 	
 	public StrategyConfig(){
 		
@@ -22,6 +27,9 @@ public class StrategyConfig {
 		this.sl 		= aConfig.sl;
 		this.barsBack 	= aConfig.barsBack;
 		this.maxBars 	= aConfig.maxBars;
+		this.tpf		= aConfig.tpf;
+		this.slf		= aConfig.slf;
+		this.risk	    = aConfig.risk;
 	}
 	
 	public void copy (StrategyConfig aConfig){
@@ -32,24 +40,31 @@ public class StrategyConfig {
 		this.sl 		= aConfig.sl;
 		this.barsBack 	= aConfig.barsBack;
 		this.maxBars 	= aConfig.maxBars;
+		this.tpf		= aConfig.tpf;
+		this.slf		= aConfig.slf;
+		this.risk	    = aConfig.risk;
 	}
 	
-	public void setParams(int h,int thr,int tp,int sl,boolean enabled){
+	public void setParams(int h,int thr,int tp,int sl,int risk,boolean enabled){
 		this.hour = h;
 		this.thr = thr;
 		this.tp = tp;
 		this.sl = sl;
 		this.enabled = enabled;
+		this.risk = risk*1.0/10;
 	}
-	public void setParams(int h,int thr,int tp,int sl,int maxBars,boolean enabled){
+	public void setParams(int h,int thr,int tp,int sl,int maxBars,int risk,boolean enabled){
 		this.hour = h;
 		this.thr = thr;
 		this.tp = tp;
 		this.sl = sl;
 		this.maxBars = maxBars;
 		this.enabled = enabled;
+		this.risk = risk*1.0/10;
 	}
-	public void setParams(int h,int thr,int tp,int sl,int maxBars,int barsBack,boolean enabled){
+	public void setParams(int h,int thr,int tp,int sl,
+			int maxBars,int barsBack,int risk,
+			boolean enabled){
 		this.hour = h;
 		this.thr = thr;
 		this.tp = tp;
@@ -57,8 +72,38 @@ public class StrategyConfig {
 		this.maxBars = maxBars;
 		this.barsBack = barsBack;
 		this.enabled = enabled;		
+		this.risk = risk*1.0/10;
+	}
+	public void setParams(int h,int thr,double tpf,double slf,int maxBars,
+			int risk,
+			int barsBack,boolean enabled){
+		this.hour = h;
+		this.thr = thr;
+		this.tpf = tpf;
+		this.slf = slf;
+		this.maxBars = maxBars;
+		this.barsBack = barsBack;
+		this.enabled = enabled;	
+		this.risk = risk*1.0/10;
 	}
 		
+	
+	public double getTpf() {
+		return tpf;
+	}
+
+	public void setTpf(double tpf) {
+		this.tpf = tpf;
+	}
+
+	public double getSlf() {
+		return slf;
+	}
+
+	public void setSlf(double slf) {
+		this.slf = slf;
+	}
+
 	public int getMaxBars() {
 		return maxBars;
 	}
@@ -101,14 +146,37 @@ public class StrategyConfig {
 	public void setBarsBack(int barsBack) {
 		this.barsBack = barsBack;
 	}
+	
+	
 			
+	public double getRisk() {
+		return risk;
+	}
+
+	public void setRisk(double risk) {
+		this.risk = risk;
+	}
+
 	public String toString(){
 		return this.hour + " " + this.enabled
 				 + " " + this.thr 
 		 + " " + this.tp 
-		 + " " + this.sl
+		 + " " + this.sl		 
+		 + " " + this.maxBars
+		 + " " + this.barsBack
+		 + " " + PrintUtils.Print2dec(this.risk, false)
+		 ;
+	}
+	
+	public String toStringf(){
+		return this.hour + " " + this.enabled
+				 + " " + this.thr 
+		 + " " + PrintUtils.Print2dec(tpf, false)
+		 + " " + PrintUtils.Print2dec(this.slf, false)
 		 + " " + this.barsBack 
-		 + " " + this.maxBars;
+		 + " " + this.maxBars
+		 + " " + PrintUtils.Print2dec(this.risk, false)
+		 ;
 	}
 
 	public void multiplyBars(int factor) {

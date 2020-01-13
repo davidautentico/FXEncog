@@ -555,6 +555,19 @@ public class QuoteShort {
 		return valueStr;
 	}
 	
+	public static String fill4(String valueStr) {
+		// TODO Auto-generated method stub
+		
+		if (valueStr.length()==1) return valueStr+"0000";
+		if (valueStr.length()==2) return valueStr+"000";
+		if (valueStr.length()==3) return valueStr+"00";
+		if (valueStr.length()==4) return valueStr+"0";
+		if (valueStr.length()>=5) return valueStr+"";
+		//if (valueStr.length()==6) return valueStr+"00000";
+		
+		return valueStr;
+	}
+	
 	public static String fill3(String valueStr) {
 		// TODO Auto-generated method stub
 		

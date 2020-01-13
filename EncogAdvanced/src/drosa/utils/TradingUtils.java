@@ -14,6 +14,7 @@ import java.util.HashMap;
 
 import drosa.experimental.PositionShort;
 import drosa.experimental.TradeResultSimple;
+import drosa.experimental.CoreStrategies.PositionCore;
 import drosa.experimental.ticksStudy.Tick;
 import drosa.experimental.zznbrum.TrendClass;
 import drosa.experimental.zznbrum.TrendInfo;
@@ -141,6 +142,42 @@ public class TradingUtils {
 			if (h==23) spread = 11;
 		}
 		
+		if (mode==2) return spread;
+		if (mode==3) return commisions;
+		
+		return spread+commisions;
+	}
+	
+	public static int getTransactionCosts(
+			HashMap<Integer,ArrayList<Double>> spreads,
+			int year,int h,int mode
+	){
+		int spread = 20;
+		
+		int commisions = 6;//darwinex
+		
+		if (spreads!=null && spreads.containsKey(year)){
+			spread = (int) Math.ceil(spreads.get(year).get(h)*10.0);
+		}
+				
+		if (mode==2) return spread;
+		if (mode==3) return commisions;
+		
+		return spread+commisions;
+	}
+	
+	public static int getTransactionCostsMinutes(
+			HashMap<Integer,ArrayList<Double>> spreads,
+			int year,int hmin,int mode
+	){
+		int spread = 20;
+		
+		int commisions = 6;//darwinex
+		
+		if (spreads.containsKey(year)){
+			spread = (int) Math.ceil(spreads.get(year).get(hmin)*10.0);
+		}
+				
 		if (mode==2) return spread;
 		if (mode==3) return commisions;
 		
@@ -3069,14 +3106,21 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 		
 		//ArrayList<Double> trendsIndex = new ArrayList<Double>();
 		
+		int wins = 0;
+		int losses = 0;
+		int winPips = 0;
+		int lostPips = 0;
+		int maxTP = 200;
 		int mode = 0;
 		int index1 = 0;
 		int index2 = 0;
 		int index3 = 0;
 		int lastDay = -1;
+		int entry = 0;
 		ArrayList<TrendClass> trends = new ArrayList<TrendClass>();
 		Calendar cal = Calendar.getInstance();
 		Calendar cal1 = Calendar.getInstance();
+		Calendar cale = Calendar.getInstance();
 		QuoteShort.getCalendar(cal1, data.get(0));
 		for (int i=0;i<data.size();i++){
 			QuoteShort q = data.get(i);
@@ -3098,12 +3142,13 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 					index2=i;
 					index3=i;
 					mode=1;
-					
+					entry = i;
 					//trendsIndex.add(actualSizeH1*1.0/minSize);
 				}else if (actualSizeL1>=minSize){
 					index2=i;
 					index3=i;
 					mode=-1;
+					entry = i;
 					
 					//trendsIndex.add(-actualSizeL1*1.0/minSize);
 				}else{
@@ -3114,15 +3159,34 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 					//guardar trends
 					int size = data.get(index2).getClose5()-data.get(index1).getClose5();
 					int sizeC = q.getClose5()-data.get(index1).getClose5();
+					
 					//if (h<=9)
+					
+					if (entry>=0) {
+						QuoteShort.getCalendar(cale, data.get(entry));
+						int he = cale.get(Calendar.HOUR_OF_DAY);
+						int sizeR = q.getClose5()-data.get(entry).getClose5();
+						if (he<=5) {
+							int pips = sizeR;
+							if (pips>=0) {
+								wins++;
+								winPips += pips;
+							}else {
+								losses++;
+								lostPips += -pips;
+							}
+						}
+					}
 					
 					TrendClass tsize = new TrendClass();					
 					tsize.setSize(size);
 					tsize.setSizeClose(sizeC);
 					tsize.setMillisIndex1(cal1.getTimeInMillis());
 					tsize.setMillisIndex2(cal.getTimeInMillis());
+					tsize.setIndex1(index1);
 					tsize.setIndexC(i);
 					tsize.setIndex3(index3);
+					tsize.setMode(mode);
 					
 					trends.add(tsize);
 					
@@ -3137,7 +3201,16 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 				}else if (q.getClose5()>=data.get(index2).getClose5()){
 					index2 = i;
 					
-					//trendsIndex.add(actualSizeH1*1.0/minSize);
+					if (entry>=0) {
+						int actualSize = data.get(index2).getClose5()-data.get(entry).getClose5();
+						QuoteShort.getCalendar(cale, data.get(entry));
+						int he = cale.get(Calendar.HOUR_OF_DAY);
+						if (actualSize>=maxTP && he<5){
+							wins++;
+							winPips += actualSize;
+							entry = -1;
+						}
+					}
 				}
 			}else if (mode==-1){
 				if (actualSizeH2>=minSize){
@@ -3146,13 +3219,16 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 					int sizeC = data.get(index1).getClose5()-q.getClose5();
 					//if (h<=9)
 					
-					TrendClass tsize = new TrendClass();					
+					TrendClass tsize = new TrendClass();	
+					tsize.setSize(size);
 					tsize.setSizeClose(-size);
 					tsize.setSizeClose(sizeC);
 					tsize.setMillisIndex1(cal1.getTimeInMillis());
 					tsize.setMillisIndex2(cal.getTimeInMillis());
+					tsize.setIndex1(index1);
 					tsize.setIndex3(index3);
 					tsize.setIndexC(i);
+					tsize.setMode(mode);
 					//tsize.getCal().setTimeInMillis(cal1.getTimeInMillis());
 					trends.add(tsize);
 					
@@ -3163,6 +3239,7 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 					QuoteShort.getCalendar(cal1, data.get(index1));
 					
 					//trendsIndex.add((data.get(index2).getClose5()-data.get(index1).getClose5())*1.0/minSize);
+					entry = i;
 				}else if (q.getClose5()<=data.get(index2).getClose5()){
 					index2 = i;
 					
@@ -3175,6 +3252,14 @@ public static ArrayList<TrendClass> calculateTrends(ArrayList<QuoteShort> data,i
 					+" || "+q.toString()
 					);*/
 		}
+		
+		int trades = wins+losses;
+		double winPer = wins*100.0/trades;
+		double pf = winPips*1.0/lostPips;
+		/*System.out.println(trades
+				+" "+PrintUtils.Print2dec(winPer, false)
+				+" "+PrintUtils.Print2dec(pf, false)
+		);*/
 
 		return trends;
 	}
@@ -3346,6 +3431,7 @@ public static ArrayList<TrendClass> calculateTrendsHL(ArrayList<QuoteShort> data
 				
 				actualTrendIndex = (data.get(index1).getHigh5()-q.getClose5())*1.0/minSize;
 				//trendsIndex.add((data.get(index2).getClose5()-data.get(index1).getClose5())*1.0/minSize);
+				System.out.println(PrintUtils.Print2dec(size*0.1, false));
 			}else if (q.getHigh5()>=data.get(index2).getHigh5()){
 				index2 = i;
 				
@@ -3379,6 +3465,7 @@ public static ArrayList<TrendClass> calculateTrendsHL(ArrayList<QuoteShort> data
 				actualTrendIndex = (q.getClose5()-data.get(index1).getLow5())*1.0/minSize;
 				
 				//trendsIndex.add((data.get(index2).getClose5()-data.get(index1).getClose5())*1.0/minSize);
+				System.out.println(PrintUtils.Print2dec(size*0.1, false));
 			}else if (q.getLow5()<=data.get(index2).getLow5()){
 				index2 = i;
 				actualTrendIndex = (data.get(index1).getHigh5()-q.getClose5())*1.0/minSize;
@@ -3540,7 +3627,8 @@ public static ArrayList<TrendClass> calculateTrendsHLDay(ArrayList<QuoteShort> d
 			if (i%20000==0){
 				//System.out.println("calculados "+i);
 			}
-			//QuoteShort qmax = TradingUtils.getMaxMinShort(data, i-170000, i-1);
+			//El i se toma high y Low
+			//para backtest mirar siempre i-1
 			for (int j=i-1;j>=0;j--){
 				QuoteShort qj = data.get(j);
 				boolean isHigh = false;
@@ -3585,6 +3673,7 @@ public static ArrayList<TrendClass> calculateTrendsHLDay(ArrayList<QuoteShort> d
 			if (nbarsH>=nbarsL) maxMin=nbarsH;
 			if (nbarsH<nbarsL) maxMin=-nbarsL;
 			maxMins.add(maxMin);
+			//System.out.println("añadidoMaxmin para "+i+" || "+q.toString()+" || "+maxMin);
 		}
 		return maxMins;
 	}
@@ -3849,5 +3938,32 @@ public static ArrayList<TrendClass> calculateTrendsHLDay(ArrayList<QuoteShort> d
 		
 		return qm.getHigh5()-qm.getLow5();
 
+	}
+	public static long getOpenSize(ArrayList<PositionShort> positions) {
+		// TODO Auto-generated method stub
+		
+		long actualSize = 0;
+		for (int i=0;i<positions.size();i++) {
+			PositionShort p = positions.get(i);
+			
+			if (p.getPositionStatus()==PositionStatus.OPEN) {
+				actualSize += p.getMicroLots();
+			}
+		}
+		return actualSize;
+	}
+	
+	public static long getOpenSize2(ArrayList<PositionCore> positions) {
+		// TODO Auto-generated method stub
+		
+		long actualSize = 0;
+		for (int i=0;i<positions.size();i++) {
+			PositionCore p = positions.get(i);
+			
+			if (p.getPositionStatus()==PositionStatus.OPEN) {
+				actualSize += p.getMicroLots();
+			}
+		}
+		return actualSize;
 	}
 }

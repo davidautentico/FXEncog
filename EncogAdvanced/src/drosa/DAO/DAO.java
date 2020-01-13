@@ -20,6 +20,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
@@ -3562,8 +3563,7 @@ public class DAO {
             String dateStr = dateTimeStr.split(" ")[0].trim();
             date = DateUtils.getDukasDate(dateStr,timeStr);
             
-            
-            
+                        
             if (dateStr.split("\\.")[2].trim().length()==4){
             	year  = Short.valueOf(dateStr.split("\\.")[2].trim());
             	day   = Byte.valueOf(dateStr.split("\\.")[0].trim());
@@ -3584,23 +3584,23 @@ public class DAO {
 				delimiter = ",";
 			}
             if (open<10.0){
-	            String openStr = linea.split(";")[1].replace(delimiter, "");
-	            String highStr = linea.split(";")[2].replace(delimiter, "");
-	            String lowStr = linea.split(";")[3].replace(delimiter, "");
-	            String closeStr = linea.split(";")[4].replace(delimiter, "");
-	            
-	            openStr = QuoteShort.fill5(openStr);
-	            highStr = QuoteShort.fill5(highStr);
-	            lowStr = QuoteShort.fill5(lowStr);
-	            closeStr =QuoteShort.fill5(closeStr);
-	           
-	            try{
-		            open5	= Integer.valueOf(openStr);
-		            high5 	= Integer.valueOf(highStr);
-		            low5 	= Integer.valueOf(lowStr);
-		            close5 	= Integer.valueOf(closeStr);
+            	 String openStr	= linea.split(";")[1].replace(delimiter, "");
+ 	            String highStr 	= linea.split(";")[2].replace(delimiter, "");
+ 	            String lowStr 	= linea.split(";")[3].replace(delimiter, "");
+ 	            String closeStr = linea.split(";")[4].replace(delimiter, "");
+ 	            
+ 	            openStr = QuoteShort.fill5(openStr);
+ 	            highStr = QuoteShort.fill5(highStr);
+ 	            lowStr = QuoteShort.fill5(lowStr);
+ 	            closeStr =QuoteShort.fill5(closeStr);
+ 	           
+ 	            try{
+ 		            open5	= Integer.valueOf(openStr);
+ 		            high5 	= Integer.valueOf(highStr);
+ 		            low5 	= Integer.valueOf(lowStr);
+ 		            close5 	= Integer.valueOf(closeStr);
 	            }catch(Exception e){
-	            	//System.out.println(linea.split(" ")[2]+" "+openStr+". "+e.getMessage());
+	            	System.out.println("error: "+linea+" || "+closeStr+" errro="+e.getMessage());
 	            }
             }else{
             	//System.out.println("A CONVERTIR: "+linea);
@@ -3978,6 +3978,123 @@ public class DAO {
 			return data;
 		}
 		
+		public static void readSpreads(String fileName,int y1,int y2,HashMap<Integer,ArrayList<Double>> spreads) {
+			spreads.clear();
+			File archivo = null;
+		    FileReader fr = null;
+		    BufferedReader br = null;
+		    Calendar cal = Calendar.getInstance();
+		    try {
+		    	// Apertura del fichero y creacion de BufferedReader para poder
+		        // hacer una lectura comoda (disponer del metodo readLine()).
+		        archivo = new File (fileName);
+		        fr = new FileReader (archivo);
+		        br = new BufferedReader(fr);
+
+		        // Lectura del fichero
+		        String line;
+		        int i=0;
+		        QuoteShort lastQ = null;
+		        while((line=br.readLine())!=null){		        
+		        	String[] values0 = line.split(" ");
+		        	//System.out.println(values0[0]+" "+values0.length+" line: "+line);
+		        	int h = Integer.valueOf(values0[0].trim());
+		        			        	
+		        	String yearsStr = values0[1].trim();
+		        	String[] values1 = yearsStr.split(" ");
+		        	int yearActual = y1;
+		        	for (int j=2;j<values0.length;j++) {//para cada año		
+		        		yearActual = y1+j-2;
+		        		if (!spreads.containsKey(yearActual)) {
+		        			spreads.put(yearActual, new ArrayList<Double>());
+		        			for (int r=0;r<=23;r++) spreads.get(yearActual).add(0.0);
+		        		}
+		        		ArrayList<Double> arr = spreads.get(yearActual);
+		        		
+		        		String str = values0[j];
+		        		Double vald = Integer.valueOf(str.replace(".", ""))/100.0;
+		        		//System.out.println(yearActual+" | h="+h+" | "+vald);
+		        		arr.set(h, vald);		        		
+		        	}
+		        	i++;
+		        }    
+		    }catch(Exception e){
+		    	e.printStackTrace();
+		    }finally{
+		         // En el finally cerramos el fichero, para asegurarnos
+		         // que se cierra tanto si todo va bien como si salta 
+		         // una excepcion.
+		         try{                    
+		            if( null != fr ){   
+		               fr.close();     
+		            }                  
+		         }catch (Exception e2){ 
+		            e2.printStackTrace();
+		         }
+		   }	
+		}
+		
+		public static void readSpreadsMinutes(String fileName,int y1,int y2,HashMap<Integer,ArrayList<Double>> spreads) {
+			spreads.clear();
+			File archivo = null;
+		    FileReader fr = null;
+		    BufferedReader br = null;
+		    Calendar cal = Calendar.getInstance();
+		    try {
+		    	// Apertura del fichero y creacion de BufferedReader para poder
+		        // hacer una lectura comoda (disponer del metodo readLine()).
+		        archivo = new File (fileName);
+		        fr = new FileReader (archivo);
+		        br = new BufferedReader(fr);
+
+		        // Lectura del fichero
+		        String line;
+		        int i=0;
+		        QuoteShort lastQ = null;
+		        while((line=br.readLine())!=null){		        
+		        	String[] values0 = line.split(" ");
+		        	//System.out.println(values0[0]+" "+values0.length+" line: "+line);
+		        	//int h = Integer.valueOf(values0[0].trim());
+		        	int hmin = i;
+		        			        	
+		        	String yearsStr = values0[1].trim();
+		        	String[] values1 = yearsStr.split(" ");
+		        	int yearActual = y1;
+		        	for (int j=2;j<values0.length;j++) {//para cada año		
+		        		yearActual = y1+j-2;
+		        		if (!spreads.containsKey(yearActual)) {
+		        			spreads.put(yearActual, new ArrayList<Double>());
+		        			for (int r=0;r<=23*12+11;r++) spreads.get(yearActual).add(0.0);
+		        		}
+		        		ArrayList<Double> arr = spreads.get(yearActual);
+		        		
+		        		String str = values0[j];
+		        		Double vald = Integer.valueOf(str.replace(".", ""))/100.0;
+		        		//System.out.println(yearActual+" | h="+h+" | "+vald);
+		        		try{
+		        			arr.set(hmin, vald);	
+		        		}catch (Exception e2){ 
+				            System.out.println("error: "+line+" "+e2.getMessage());
+				         }	
+		        	}
+		        	i++;
+		        }    
+		    }catch(Exception e){
+		    	e.printStackTrace();
+		    }finally{
+		         // En el finally cerramos el fichero, para asegurarnos
+		         // que se cierra tanto si todo va bien como si salta 
+		         // una excepcion.
+		         try{                    
+		            if( null != fr ){   
+		               fr.close();     
+		            }                  
+		         }catch (Exception e2){ 
+		            e2.printStackTrace();
+		         }
+		   }	
+		}
+		
 		public static ArrayList<QuoteShort> retrieveDataShort5m(String fileName,DataProvider providerType){
 			ArrayList<QuoteShort> data = new  ArrayList<QuoteShort>();
 			File archivo = null;
@@ -4152,7 +4269,7 @@ public class DAO {
 		    return data;
 		}
 		
-		public static ArrayList<QuoteShort> retrieveDataESNQ(String fileName,DataProvider providerType){
+		public static ArrayList<QuoteShort> retrieveDataESNQ(String fileName,DataProvider providerType,int startLine){
 			ArrayList<QuoteShort> data = new  ArrayList<QuoteShort>();
 			File archivo = null;
 		    FileReader fr = null;
@@ -4169,9 +4286,10 @@ public class DAO {
 		        String line;
 		        int i=0;
 		        while((line=br.readLine())!=null){
-		        	if (i>0){
+		        	if (i>= startLine){
 		        		 QuoteShort q = decodeQuoteShort(line,providerType);     	
 		        		 data.add(q);
+		        		 //System.out.println(q.toString()+" "+q.getVol());
 		        	}
 		        	i++;
 		        }    
@@ -4686,5 +4804,7 @@ public class DAO {
 		    }   
 		    return res;
 		}
+
+		
 	
 }

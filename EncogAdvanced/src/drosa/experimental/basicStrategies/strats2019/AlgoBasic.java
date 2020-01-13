@@ -2,6 +2,7 @@ package drosa.experimental.basicStrategies.strats2019;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 
 import drosa.experimental.PositionShort;
 import drosa.finances.QuoteShort;
@@ -23,13 +24,21 @@ public abstract class AlgoBasic {
 	int lastDayTrade = -1;
 	int totalDaysTrading = 0;
 	double risk = 0.20;
-	boolean printAnyway = true;
+	boolean printAnyway = true;	
+	HashMap<Integer,ArrayList<Double>> spreads = null;
+	int isTransactionHours = 1;
+	int debug =0;
+	int lastCrossed = 0;
+	int atrRange20 = 800;
+	int actualH = 0;
+	int actualY = 0;
+	int actualM = 0;
 	
-	public void doTrailPositions(ArrayList<QuoteShort> data, int i, ArrayList<PositionShort> positions) {
+	public void doTrailPositions(ArrayList<QuoteShort> dataBid,ArrayList<QuoteShort> dataASK, int i, ArrayList<PositionShort> positions) {
 		
-		if (trailPer<=0.0) return;
+		/*if (trailPer<=0.0) return;
 		
-		QuoteShort q = data.get(i);
+		QuoteShort q = dataid.get(i);
 		int j = 0;
 		while (j<positions.size()){
 			PositionShort p = positions.get(j);
@@ -59,16 +68,18 @@ public abstract class AlgoBasic {
 				}
 			}
 			j++;
-		}
-		
+		}*/		
 	}
 		
-	public void doTest(			
+	public double doTest(			
 			String header,
-			ArrayList<QuoteShort> data,
+			ArrayList<QuoteShort> dataBid,
+			ArrayList<QuoteShort> dataAsk,
 			ArrayList<Integer> maxMins,
+			HashMap<Integer,ArrayList<Double>> spreads,
 			int y1,int y2,int m1,int m2,
 			StratPerformance sp,
+			int isTrasactionHours,
 			int debug,
 			int printOptions
 			){
@@ -86,6 +97,10 @@ public abstract class AlgoBasic {
 		int totalDays = 0;
 		totalDaysTrading = 0;
 		int lastDayPips = 0;
+		this.spreads = spreads;
+		this.isTransactionHours = isTrasactionHours;
+		this.debug = debug;
+		this.lastCrossed = 0; //para bollinger cuando se cruza por ultima vez
 
 		atrArray.add(800);
 		//sp.reset();
@@ -96,24 +111,34 @@ public abstract class AlgoBasic {
 		double maxDayLossAcc$$=0;
 		double dayBalance = 0;
 		int maxDayPositions = 0;
-		for (int i=1;i<data.size();i++){
-			QuoteShort q = data.get(i);
-			QuoteShort q1 = data.get(i-1);
-			QuoteShort.getCalendar(cal, q);
-			QuoteShort.getCalendar(cal1, q1);
+		
+		int minSize = dataBid.size();
+		if (dataAsk.size()<minSize) minSize = dataAsk.size();
+		
+		for (int i=1;i<minSize;i++){
+			QuoteShort qb	= dataBid.get(i);
+			QuoteShort qb1 	= dataBid.get(i-1);
+			QuoteShort qa 	= dataAsk.get(i);
+			QuoteShort qa1	= dataAsk.get(i-1);
+			QuoteShort.getCalendar(cal, qb);
+			QuoteShort.getCalendar(cal1, qb1);
 			boolean canTrade = true;
 			
 			//System.out.println(DateUtils.datePrint(cal)+" "+positions.size());
 			if (cal.compareTo(calFrom)<0 || cal.compareTo(calTo)>0) continue;
 			
 			int day = cal.get(Calendar.DAY_OF_YEAR);
+			actualH = cal.get(Calendar.HOUR_OF_DAY);
+			actualY = cal.get(Calendar.YEAR);
+			actualM = cal.get(Calendar.MONTH);
 			if (day!=lastDay){
 				if (lastDay!=-1){
 					int range = high-low;
 					ranges.add(range);
 					
 					int atr = (int) MathUtils.average(ranges, ranges.size()-20, ranges.size()-1);
-					
+					if (debug==1)
+						System.out.println("[day range] "+range+" "+atr+" || "+qb1.toString());
 					atrArray.add(atr);
 					totalDays++;
 					if (dayTraded) totalDaysTrading++;
@@ -141,12 +166,13 @@ public abstract class AlgoBasic {
 			}
 									
 			//evaluamos entradas
-			int ntrades = doEvaluateEntries(data,maxMins,i,positions,canTrade,sp);
+			int ntrades = doEvaluateEntries(dataBid,dataAsk,maxMins,spreads,i,positions,canTrade,sp);
 			if (ntrades>0){
 				dayTraded = true;
 			}
 			
-			//evaluamos SL y Tp			
+			//evaluamos SL y Tp		
+			sp.resetEquitity();			
 			int j = 0;
 			int lossAccumulated = 0;
 			double lossAccumulated$$ = 0;
@@ -157,15 +183,14 @@ public abstract class AlgoBasic {
 				int pips = 0;
 				if (p.getPositionStatus()==PositionStatus.OPEN){
 					if (p.getPositionType()==PositionType.LONG){
-						int testValue = q.getLow5();
-						pips = q.getClose5()-p.getEntry();
-						if (
-								testValue<=p.getSl() && p.getSl()>=0){
-							pips = p.getSl()-p.getEntry();
+						int testValue = qb.getOpen5();
+						pips = testValue-p.getEntry();
+						if (testValue<=p.getSl() && p.getSl()>=0){
+							pips = testValue-p.getEntry();
 							isClosed = true;
-							//System.out.println("[long sl touched] "+pips+" "+(p.getTp()-p.getEntry()));
-						}else if (q.getOpen5()>=p.getTp() && p.getTp()>=0){
-							pips = p.getTp()-p.getEntry();
+							//System.out.println("[long sl touched] "+pips);
+						}else if (testValue>=p.getTp() && p.getTp()>=0){
+							pips = testValue-p.getEntry();
 							isClosed = true;
 						}
 						
@@ -173,13 +198,13 @@ public abstract class AlgoBasic {
 							p.setMaxLoss(p.getEntry()-testValue);
 						}
 					}else if (p.getPositionType()==PositionType.SHORT){
-						int testValue = q.getHigh5();
-						pips = -q.getClose5()+p.getEntry();
+						int testValue = qa.getOpen5();
+						pips = -testValue+p.getEntry();
 						if (testValue>=p.getSl() && p.getSl()>=0){
-							pips = -p.getSl()+p.getEntry();
+							pips = -testValue+p.getEntry();
 							isClosed = true;
-						}else if (q.getOpen5()<=p.getTp() && p.getTp()>=0){
-							pips = -p.getTp()+p.getEntry();
+						}else if (testValue<=p.getTp() && p.getTp()>=0){
+							pips = -testValue+p.getEntry();
 							isClosed = true;
 						}
 						
@@ -189,11 +214,19 @@ public abstract class AlgoBasic {
 					}
 				}
 				
+				sp.updateEquitity(pips,p.getMicroLots());
 				if (isClosed){
 					int pipsSL = Math.abs(p.getEntry()-p.getSl());
 					double rr = pips*1.0/pipsSL;
 					//System.out.println(rr);
 					sp.addTrade(p.getMicroLots(),pips,pipsSL,p.getMaxLoss(),p.getTransactionCosts(),cal);
+					
+					if (debug==1) {
+						System.out.println(" [CLOSED trade] "+DateUtils.datePrint(cal)
+							+" || pips = "+pips
+							+" || "+p.toString2()
+						);
+					}
 					positions.remove(j);
 				}else{
 					int pipsSL = Math.abs(p.getEntry()-p.getSl());
@@ -207,16 +240,16 @@ public abstract class AlgoBasic {
 			}
 			
 			//evaluamos salidas especiales
-			doEvaluateExits(data,i,positions,sp);	
+			doEvaluateExits(dataBid,dataAsk,i,positions,sp);	
 			
 			//custom manage
-			doManagePositions(data,i,positions);
+			doManagePositions(dataBid,dataAsk,i,positions);
 			
-			doTrailPositions(data,i,positions);
+			doTrailPositions(dataBid,dataAsk,i,positions);
 			
 			//actualizamos high low
-			if (high==-1 || q.getHigh5()>=high) high = q.getHigh5();
-			if (low==-1 || q.getLow5()<=low) low = q.getLow5();
+			if (high==-1 || qb.getHigh5()>=high) high = qb.getHigh5();
+			if (low==-1 || qb.getLow5()<=low) low = qb.getLow5();
 		}
 		
 		int actualDayPips = sp.getWinPips()-sp.getLostPips();
@@ -227,6 +260,7 @@ public abstract class AlgoBasic {
 		//if (printResults){
 			double winPer = sp.getWins()*100.0/sp.getTrades();
 			double pf = sp.getWinPips()*1.0/sp.getLostPips();
+			double pf$$ = sp.getWinPips$()*1.0/sp.getLostPips$();
 			double avgPips = (sp.getWinPips()-sp.getLostPips())*0.1/sp.getTrades();
 			double avgWin = sp.getWinPips()*0.1/sp.getWins();
 			double avgLoss = sp.getLostPips()*0.1/sp.getLosses();
@@ -236,19 +270,19 @@ public abstract class AlgoBasic {
 			//double var95 = sp.getMonthDataDD(2);
 			double var95 = sp.getMonthDataDDRR(sp.getInitialBalance(),this.risk,2);
 			if (true 
-					&& printOptions==0 
-					||
-					(factor>=30.0
-					&& perDays>=30.0 
-					//&& pf>=1.40
-					&& var95<=10.0)
+					&& (printOptions==0 || (printOptions==2 
+									&& sp.getMaxDD()<=30.0 
+										//&& sp.getProfitPer()>=100.0 
+										&& perDays>=30.0)
 					)
+				)
 			System.out.println(
 					header
 					+" || "
 					+sp.getTrades()
 					+" "+PrintUtils.Print2dec(winPer, false)
 					+" "+PrintUtils.Print2dec(pf, false)
+					+" "+PrintUtils.Print2dec(pf$$, false)
 					+" "+PrintUtils.Print2dec(avgPips, false)
 					+" "+PrintUtils.Print2dec(avgWin, false)
 					+" "+PrintUtils.Print2dec(avgLoss, false)
@@ -265,16 +299,22 @@ public abstract class AlgoBasic {
 					+" "+PrintUtils.Print2dec(var95,false)
 					);
 		//}
+		return pf$$;
 	}
 
-	abstract public void doManagePositions(ArrayList<QuoteShort> data, int i, ArrayList<PositionShort> positions);
+	abstract public void doManagePositions(ArrayList<QuoteShort> dataBid,ArrayList<QuoteShort> dataAsk, int i, ArrayList<PositionShort> positions);
 	
-	abstract public void doEvaluateExits(ArrayList<QuoteShort> data, 
+	abstract public void doEvaluateExits(
+			ArrayList<QuoteShort> dataBid, 
+			ArrayList<QuoteShort> dataAsk, 
 			int i, ArrayList<PositionShort> positions,
 			StratPerformance sp);
 
 	abstract public int doEvaluateEntries(
-			ArrayList<QuoteShort> data,ArrayList<Integer> maxMins,
+			ArrayList<QuoteShort> dataBid, 
+			ArrayList<QuoteShort> dataAsk, 
+			ArrayList<Integer> maxMins,
+			HashMap<Integer,ArrayList<Double>> spreads,
 			int i, ArrayList<PositionShort> positions,
 			boolean canTrade,StratPerformance sp);
 

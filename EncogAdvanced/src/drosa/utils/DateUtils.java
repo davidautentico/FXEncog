@@ -721,7 +721,7 @@ Date date = new Date();
         }
         
         if (calY==2017){
-            if ((calM>Calendar.MARCH )
+            if ((calM>Calendar.MARCH  && calM<=Calendar.OCTOBER)
             	|| (calM==Calendar.MARCH && calD>=13)
             	|| (calM==Calendar.OCTOBER && calD<31)
             	){
@@ -730,7 +730,7 @@ Date date = new Date();
         }
         
         if (calY==2018){
-            if ((calM>Calendar.MARCH )
+            if ((calM>Calendar.MARCH  && calM<=Calendar.OCTOBER)
             	|| (calM==Calendar.MARCH && calD>=13)
             	|| (calM==Calendar.OCTOBER && calD<31)
             	){
@@ -739,7 +739,7 @@ Date date = new Date();
         }
         
         if (calY==2019){
-            if ((calM>Calendar.MARCH )
+            if ((calM>Calendar.MARCH  && calM<=Calendar.OCTOBER)
             	|| (calM==Calendar.MARCH && calD>=10)
             	|| (calM==Calendar.OCTOBER && calD<31)
             	){

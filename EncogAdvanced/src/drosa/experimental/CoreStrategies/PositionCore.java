@@ -19,6 +19,7 @@ public class PositionCore {
 		int maxIndex = 0;
 		double pipValue = 0;
 		int microLots = 0;
+		int transactionCosts = 0;
 		
 		PositionType positionType = PositionType.NONE;
 		PositionStatus positionStatus = PositionStatus.NONE;
@@ -30,6 +31,12 @@ public class PositionCore {
 		
 		
 		
+		public int getTransactionCosts() {
+			return transactionCosts;
+		}
+		public void setTransactionCosts(int transactionCosts) {
+			this.transactionCosts = transactionCosts;
+		}
 		public int getMicroLots() {
 			return microLots;
 		}

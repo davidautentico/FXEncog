@@ -92,6 +92,9 @@ public class Tick {
 	public String toString(){
 		return DateUtils.datePrint(year, month, day, hour, min, sec)+" "+price+" "+volume+" "+bid+" "+ask+" "+minuteBar+" "+minuteHigh+" "+minuteLow;		
 	}
+	public String toString2(){
+		return DateUtils.datePrint(year, month, day, hour, min, sec)+" "+price+" "+volume+" "+bid+" "+ask;		
+	}
 	
 	//DATE,TIME,PRICE,VOL,BID,ASK
 	public static Tick decodeBigMikeTick(String line){

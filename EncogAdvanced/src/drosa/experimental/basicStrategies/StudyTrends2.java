@@ -1052,7 +1052,7 @@ public class StudyTrends2 {
 		String path0 ="C:\\fxdata\\";
 		//String path0 = "C:\\Users\\David\\Documents\\fxdata\\";
 
-		String pathEURUSD = path0+"EURUSD_UTC_1 Min_Bid_2011.12.31_2018.01.10.csv";
+		String pathEURUSD = path0+"EURUSD_5 Mins_Bid_2014.01.01_2019.11.05.csv";
 		String pathNews = path0+"News.csv";
 		
 		ArrayList<String> paths = new ArrayList<String>();
@@ -1071,7 +1071,7 @@ public class StudyTrends2 {
 		//FFNewsClass.readNews(pathNews,news,0);
 		for (int i = 0;i<=limit;i++){
 			String path = paths.get(i);			
-			dataI 		= DAO.retrieveDataShort5m(path, DataProvider.DUKASCOPY_FOREX3);									
+			dataI 		= DAO.retrieveDataShort5m(path, DataProvider.DUKASCOPY_FOREX4);									
 			//dataS 		= TestLines.calculateCalendarAdjustedS(dataI);
 			TestLines.calculateCalendarAdjustedSinside(dataI);
 			//TradingUtils.cleanWeekendDataSinside(dataI); 	
@@ -1082,21 +1082,36 @@ public class StudyTrends2 {
 			
 			int y1=2012;
 			int y2=2017;
-			int minSize=400;
+			int minSize=200;
 			
+			
+			ArrayList<TrendClass> arr = new ArrayList<TrendClass>();
+			ArrayList<Double> arrd = new ArrayList<Double>();
+			Calendar cal = Calendar.getInstance();
 			for (minSize=200;minSize<=200;minSize+=100){
-				for (y1=2012;y1<=2012;y1++){
-					y2=y1+6;
-					for (int h1=0;h1<=0;h1++){
-						int h2 = h1+9;
-						for (int tp=10;tp<=800;tp+=10){
-							for (int minDiff=50;minDiff<=50;minDiff+=10){
-								ArrayList<TrendClass> trends = StudyTrends2.doTest3(data, y1, y2,
-										h1,h2,minSize,tp,minDiff,false,true,0);
+				for (int testSize=200;testSize<=1200;testSize+=100) {
+					//ArrayList<TrendClass> arr = TradingUtils.calculateTrends(data, minSize);
+					int cases = 0;
+					int avg = 0;
+					arr = TradingUtils.calculateTrendsHL(data, minSize,arrd);
+					for (int j=0;j<arr.size()-2;j++) {
+						TrendClass t = arr.get(j);
+						TrendClass t1 = arr.get(j+1);
+						TrendClass t2 = arr.get(j+2);
+						cal.setTimeInMillis(t.getMillisOpen());
+						int hopen = cal.get(Calendar.HOUR_OF_DAY);
+						//System.out.println(t.getSize());
+						if (hopen>=0) {
+							int absSize = Math.abs(t.getSize());
+							int absSize1 = Math.abs(t1.getSize());
+							if (absSize>=testSize) {
+								cases++;
+								//
+								avg+= t1.getSize()+t2.getSize();
 							}
 						}
 					}
-					
+					System.out.println(testSize+" "+cases+" "+PrintUtils.Print2dec(avg*1.0/cases, false));
 				}
 			}			
 			

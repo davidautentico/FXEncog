@@ -473,6 +473,8 @@ public class TestHighLow {
 				}
 				
 			}*/
+			
+			data = TickUtils.readFastTicksDave(fileName,y1,y2);
 		
 			int y1=2009;
 			int y2=2016;

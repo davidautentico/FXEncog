@@ -13,10 +13,17 @@ public class TrendClass {
 	int sizeClose=0;
 	double factor = 0;
 	int mode=0;
+	int index1 = 0;
 	int index3 = 0;
 	int indexC = 0;
 	
 	
+	public int getIndex1() {
+		return index1;
+	}
+	public void setIndex1(int index1) {
+		this.index1 = index1;
+	}
 	public int getIndexC() {
 		return indexC;
 	}
