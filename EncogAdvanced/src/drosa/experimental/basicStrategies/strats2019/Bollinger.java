@@ -315,8 +315,8 @@ public class Bollinger extends AlgoBasic  {
 		String pathSpread = path0+currency+"_spreads_2014_2019.csv";
 		//String pathSpread = path0+currency+"_spreads_minutes_2012_2019.csv";
 		//currency="eurchf";
-		String pathBid = path0+currency+"_5 Mins_Bid_2009.01.01_2019.12.23.csv";
-		String pathAsk = path0+currency+"_5 Mins_Ask_2009.01.01_2019.12.23.csv";
+		String pathBid = path0+currency+"_5 Mins_Bid_2009.01.01_2020.01.17.csv";
+		String pathAsk = path0+currency+"_5 Mins_Ask_2009.01.01_2020.01.17.csv";
 		String pathNews = path0+"News.csv";
 		
 		
@@ -402,9 +402,9 @@ public class Bollinger extends AlgoBasic  {
 			sp = new StratPerformance();
 			for (int h1=0;h1<=0;h1++){
 				int h2 = h1+8;
-				for (int nbars=60;nbars<=60;nbars+=1){
-					for (double dt=0.20;dt<=0.20;dt+=0.01){
-						for (double sl=0.5;sl<=0.5;sl+=0.10){	
+				for (int nbars=54;nbars<=54;nbars+=5){
+					for (double dt=0.16;dt<=0.16;dt+=0.01){
+						for (double sl=0.6;sl<=0.6;sl+=0.10){	
 							for (int thr=-1;thr<=-1;thr+=100){
 								for (int minDiff=0;minDiff<=0;minDiff+=6) {
 									for (double risk=0.3;risk<=0.3;risk+=0.10){
@@ -425,8 +425,8 @@ public class Bollinger extends AlgoBasic  {
 											ArrayList<Integer> tradess = new ArrayList<Integer>();
 											for (int y1=2009;y1<=2019;y1++){
 												int y2 = y1+0;
-												for (int m1=0;m1<=0;m1+=1){
-													int m2 = m1+11;
+												for (int m1=0;m1<=8;m1+=2){
+													int m2 = m1+3;
 													mm = new Bollinger();
 													
 													sp.reset();

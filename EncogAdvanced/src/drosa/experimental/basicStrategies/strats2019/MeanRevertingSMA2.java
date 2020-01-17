@@ -277,7 +277,7 @@ public class MeanRevertingSMA2 extends AlgoBasic {
 											+" "+h1+" "+h2
 											+" "+y1+" "+y2
 											;
-											mm.doTest(header,data,maxMins, y1, y2, m1, m2, sp, 1,0);		
+											mm.doTest(header,data,maxMins, y1, y2, m1, m2, sp, 1,0,0);		
 											try {
 												Sizeof.runGC ();
 											} catch (Exception e) {

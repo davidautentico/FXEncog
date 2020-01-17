@@ -156,8 +156,7 @@ public class DaveTrade2019_vol2 {
 				if (high!=-1){
 					range = high-low;
 					rangeArr.add(range);
-					range = (int) MathUtils.average(rangeArr, rangeArr.size()-20,rangeArr.size()-1);	
-					
+					range = (int) MathUtils.average(rangeArr, rangeArr.size()-20,rangeArr.size()-1);						
 				}			
 				
 				if (dayTrade==1) totalDaysTrade++;
@@ -168,6 +167,8 @@ public class DaveTrade2019_vol2 {
 				lastDay = day;
 				mode = 0;
 				totalDays++;
+				//actualizamos day equitity
+				sp.updateDailyEquitity(actualEquitity);
 			}
 			
 			if (high==-1 || qa.getHigh5()>=high) high = qa.getHigh5();
@@ -470,6 +471,8 @@ public class DaveTrade2019_vol2 {
 				+" "+PrintUtils.Print2dec(perR, false)
 				+" "+PrintUtils.Print2dec(maxDD, false)
 				+" || "+PrintUtils.Print2dec(ff, false)
+				+" || "+sp.maxDDStats(20)
+				+" || "+sp.maxDDStats(40)
 				);
 		
 		return pf;
@@ -478,8 +481,8 @@ public class DaveTrade2019_vol2 {
 	public static void main(String[] args) throws Exception {
 		String path0 ="C:\\fxdata\\";
 		String currency = "eurusd";
-		String pathBid = path0+currency+"_5 Mins_Bid_2004.01.01_2020.01.06.csv";
-		String pathAsk = path0+currency+"_5 Mins_Ask_2004.01.01_2020.01.06.csv";
+		String pathBid = path0+currency+"_5 Mins_Bid_2004.01.01_2020.01.13.csv";
+		String pathAsk = path0+currency+"_5 Mins_Ask_2004.01.01_2020.01.13.csv";
 						
 		ArrayList<String> paths = new ArrayList<String>();
 		paths.add(pathBid);
@@ -530,21 +533,24 @@ public class DaveTrade2019_vol2 {
 			StratPerformance sp = new StratPerformance();
 			for (int h1=9;h1<=9;h1++){
 				//settings a 12/01/2020
-				strat.set(9,"36 0.30 4 0.10");
-				strat.set(10,"108 0.35 5 0.1");
+				strat.set(9,"36 0.30 4 0.1");
+				strat.set(10,"108 0.35 5 0.2");
 				strat.set(11,"60 0.40 2 0.1");			
 				strat.set(12,"72 0.45 2 0.1");			
 				strat.set(13,"96 0.55 2 0.2");
 				strat.set(14,"132 0.60 4 0.3");			
-				strat.set(15,"84 0.50 5 0.3");			
+				strat.set(15,"84 0.50 5 0.4");			
 				strat.set(16,"132 0.75 1 0.3");			
-				strat.set(17,"36 0.45 4 0.2");			
+				strat.set(17,"36 0.45 4 0.1");			
 				strat.set(18,"120 0.70 3 0.1");			
 				strat.set(19,"108 0.65 1 0.2");			
 				strat.set(20,"84 0.55 1 0.3");			
 				strat.set(21,"108 0.60 1 0.3");
 				strat.set(22,"96 0.50 1 0.3");
-				/*for (int j=0;j<=23;j++){
+				
+
+				/*System.out.println("testing..."+h1);
+				for (int j=0;j<=23;j++){
 					if (j!=h1)
 					strat.set(j,"-1");
 				}*/
@@ -560,10 +566,10 @@ public class DaveTrade2019_vol2 {
 							double accTotal = 0;
 							for (int y1=2004;y1<=2020;y1++){
 								int y2 = y1+0;
-								for (int m1=0;m1<=8;m1+=4){
-									int m2 = m1+3;
+								for (int m1=0;m1<=0;m1+=1){
+									int m2 = m1+11;
 									sp.reset();
-									sp.setInitialBalance(3000);
+									sp.setInitialBalance(6000);
 									double pf = DaveTrade2019_vol2.doTest("",sp, dataBid,dataAsk, y1, y2, m1, m2, 
 											strat, true, 2);									
 									if (pf>=1.0){
@@ -578,7 +584,7 @@ public class DaveTrade2019_vol2 {
 							//double pf0912 = DaveTrade2019_vol2.doTest("", data, 2009, 2012, 0, 11, strat, true, 0.1, 2);
 							//double pf1315 = DaveTrade2019_vol2.doTest("", data, 2013, 2015, 0, 11, strat, true, 0.1, 2);
 							sp.reset();
-							sp.setInitialBalance(4000);
+							sp.setInitialBalance(3000);
 							double pf0407 = DaveTrade2019_vol2.doTest(h1+" "+str,sp, dataBid,dataAsk, 2004, 2007, 0, 11, strat, true, 2);
 							double pf0811 = DaveTrade2019_vol2.doTest(h1+" "+str,sp, dataBid,dataAsk, 2008, 2011, 0, 11, strat, true, 2);
 							double pf1215 = DaveTrade2019_vol2.doTest(h1+" "+str,sp, dataBid,dataAsk, 2012, 2015, 0, 11, strat, true, 2);

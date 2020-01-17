@@ -37,6 +37,8 @@ public class StratPerformance {
 	HashMap<Integer,ArrayList<Integer>> monthTradesP = new HashMap<Integer,ArrayList<Integer>>();
 	HashMap<Integer,ArrayList<Integer>> monthTradesSL = new HashMap<Integer,ArrayList<Integer>>();
 	
+	ArrayList<Double> dayEquitityArr = new ArrayList<Double>();
+	
 	
 	
 	public double getWinPips$() {
@@ -151,6 +153,7 @@ public class StratPerformance {
 		this.maxBalance	= initialBalance;
 		this.actualEquitity = initialBalance;
 		this.maxEquitity = initialBalance;
+		dayEquitityArr.clear();
 	}
 	public double getMaxBalance() {
 		return maxBalance;
@@ -336,6 +339,7 @@ public class StratPerformance {
 		monthData.clear();
 		monthTradesP.clear();
 		monthTradesSL.clear();
+		dayEquitityArr.clear();
 	}
 	
 	public void addTrade(long miniLots,
@@ -453,5 +457,48 @@ public class StratPerformance {
 				maxDD = actualDD;
 			}
 		}	
+	}
+	
+	public void updateDailyEquitity(double dayEquitity) {
+		// TODO Auto-generated method stub
+		this.dayEquitityArr.add(dayEquitity);
+	}
+	
+
+	/**Proporciona stats sobre
+	 * el maxDD medio en intervalos de nDays de trading
+	 * @param nDays
+	 * @return
+	 */
+	public String maxDDStats(int nDays) {
+		String str = "";
+		
+		double topDD = 0;
+		ArrayList<Double> maxDDArr = new ArrayList<Double>(); 
+		for (int i=0;i<=dayEquitityArr.size()-nDays;i++) {
+			double eq = dayEquitityArr.get(i);
+			
+			double maxDD = 0;
+			double maxEquitity = eq;
+			for (int j=i+1;j<=i+nDays-1;j++) {
+				double eqj = dayEquitityArr.get(j);
+				
+				if (eqj>=maxEquitity) maxEquitity = eqj;
+				else {
+					double dd = 100.0-eqj*100.0/maxEquitity;
+					if (dd>=maxDD) {
+						maxDD = dd;
+					}
+				}
+			}
+			maxDDArr.add(maxDD);
+			if (maxDD>=topDD) topDD = maxDD;
+		}
+		
+		double avgDD = MathUtils.average(maxDDArr);
+		
+		str = PrintUtils.Print2dec(avgDD, false)+" "+PrintUtils.Print2dec(topDD, false);
+		
+		return str.trim();
 	}
 }

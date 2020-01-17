@@ -676,6 +676,9 @@ public class TestPriceBufferGlobal$$ {
 				low = -1;
 				dayPips =0;
 				lastDay = day;
+				
+				//actualizamos day equitity
+				sp.updateDailyEquitity(actualEquitity);
 			}
 			
 			StrategyConfig config = configs.get(h);
@@ -703,6 +706,7 @@ public class TestPriceBufferGlobal$$ {
 					int CL = qb1.getClose5()-qb1.getLow5();
 					if (index>=0
 							//&& sizeCandle1<=sizeCandle*10
+							&& risk >=0.1
 							){
 						int maxMin = maxMins.get(index);
 						//System.out.println("[INDEX>=0] "+DateUtils.datePrint(cal)+" "+thr+" "+(end-index)+" || "+dataAsk.get(index).toString()+" "+maxMin);
@@ -1113,6 +1117,8 @@ public class TestPriceBufferGlobal$$ {
 					//+" || VAR95= "+PrintUtils.Print2dec(var95, false)
 					+" || Factor="+PrintUtils.Print2dec(perMaxWin/maxDD, false)
 					+" || "+PrintUtils.Print2dec(taeFactor, false)
+					+" || "+sp.maxDDStats(20)
+					+" || "+sp.maxDDStats(40)
 					
 					);
 		}
@@ -1127,8 +1133,8 @@ public class TestPriceBufferGlobal$$ {
 		
 		String path0 ="C:\\fxdata\\";
 		String currency = "eurusd";
-		String pathBid = path0+currency+"_5 Mins_Bid_2004.01.01_2020.01.06.csv";
-		String pathAsk = path0+currency+"_5 Mins_Ask_2004.01.01_2020.01.06.csv";	
+		String pathBid = path0+currency+"_5 Mins_Bid_2004.01.01_2020.01.13.csv";
+		String pathAsk = path0+currency+"_5 Mins_Ask_2004.01.01_2020.01.13.csv";	
 		String pathSpread = path0+currency+"_spreads_2009_2019.csv";
 		
 		ArrayList<String> paths = new ArrayList<String>();
@@ -1197,6 +1203,18 @@ public class TestPriceBufferGlobal$$ {
 				StrategyConfig config8 = new StrategyConfig();config8.setParams(8, 545,20,15,16,1,1, true);configs.set(8, config8);				
 			    StrategyConfig config9 = new StrategyConfig();config9.setParams(9, 434,25,35,17,1,1, true);configs.set(9, config9);
 				StrategyConfig config23 = new StrategyConfig();config23.setParams(23, 142,10,80,156,1,5, true);configs.set(23, config23);
+				
+				/*StrategyConfig config = new StrategyConfig();config.setParams(0,111,169,90,120,12,7, true);configs.set(0, config);//12
+				StrategyConfig config1 = new StrategyConfig();config1.setParams(1,168,103,100,125,12,4, true);configs.set(1, config1);//12
+				StrategyConfig config2 = new StrategyConfig();config2.setParams(2, 216,15,50,180,6,4, true);configs.set(2, config2);//6
+				StrategyConfig config3 = new StrategyConfig();config3.setParams(3, 125,20,40,190,1,2, true);configs.set(3, config3);//450
+				StrategyConfig config4 = new StrategyConfig();config4.setParams(4, 825,10,50,90,1,1, true);configs.set(4, config4);
+				StrategyConfig config5 = new StrategyConfig();config5.setParams(5, 450,15,25,86,1,7, true);configs.set(5, config5);
+				StrategyConfig config6 = new StrategyConfig();config6.setParams(6, 249,10,65,37,1,7, true);configs.set(6, config6);
+				StrategyConfig config7 = new StrategyConfig();config7.setParams(7, 216,25,15,42,1,2, true);configs.set(7, config7);				
+				StrategyConfig config8 = new StrategyConfig();config8.setParams(8, 545,20,15,16,1,1, true);configs.set(8, config8);				
+			    StrategyConfig config9 = new StrategyConfig();config9.setParams(9, 434,25,35,17,1,1, true);configs.set(9, config9);
+				StrategyConfig config23 = new StrategyConfig();config23.setParams(23, 142,10,80,156,1,5, true);configs.set(23, config23);*/
 				
 				StrategyConfig config10 = new StrategyConfig();config10.setParams(10, 2000,70,20,384,1,1, false);configs.set(10, config10);//12
 				StrategyConfig config11 = new StrategyConfig();config11.setParams(11, 225,55,8,204,1,false);configs.set(11, config11);//12
@@ -1297,8 +1315,8 @@ public class TestPriceBufferGlobal$$ {
 				
 					
 					for (int h=0;h<=0;h++){
-						//System.out.println("**testeando H="+h);
-						/*for (int h0=0;h0<=23;h0++){						
+						/*System.out.println("**testeando H="+h);
+						for (int h0=0;h0<=23;h0++){						
 							if (configs.get(h0)!=null){
 								configs.get(h0).copy(defaultConfigs.get(h0));
 								if (h0!=h) configs.get(h0).setEnabled(false);
@@ -1309,7 +1327,7 @@ public class TestPriceBufferGlobal$$ {
 						for (int tp=70;tp<=70;tp+=5){
 							for (int sl=20;sl<=20;sl+=5){
 						//for (double tpf=0.1;tpf<=0.1;tpf+=0.10){
-							for (double risk=1.0;risk<=1.0;risk+=0.10){
+							for (double risk=0.0;risk<=2.0;risk+=0.10){
 								for (int maxBars=384;maxBars<=384;maxBars+=12){
 									for (int barsBack=1;barsBack<=1;barsBack++){
 										for (int thr=2000;thr<=2000;thr+=100){		
@@ -1358,8 +1376,8 @@ public class TestPriceBufferGlobal$$ {
 																	for (int sc=0;sc<=0;sc++){
 																		for (int hf=24;hf<=24;hf++){
 																			for (double aStd=0.0;aStd<=0.0;aStd+=1.0){
-																				for (int y1=2004;y1<=2020;y1+=1){
-																					int y2 = y1+0;
+																				for (int y1=2015;y1<=2015;y1+=1){
+																					int y2 = y1+5;
 																					for (int m1=0;m1<=0;m1+=1){
 																						int m2 = m1+11;
 																						String header1 = y1+" "+y2+" "+m1+" "+m2+" "+maxTrades
