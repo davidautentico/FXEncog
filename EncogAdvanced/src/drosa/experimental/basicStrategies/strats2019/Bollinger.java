@@ -310,13 +310,13 @@ public class Bollinger extends AlgoBasic  {
 	
 	public static void main(String[] args) {
 		String path0 ="C:\\fxdata\\";
-		String currency = "eurusd";
+		String currency = "eurjpy";
 
 		String pathSpread = path0+currency+"_spreads_2014_2019.csv";
 		//String pathSpread = path0+currency+"_spreads_minutes_2012_2019.csv";
 		//currency="eurchf";
-		String pathBid = path0+currency+"_5 Mins_Bid_2009.01.01_2020.01.17.csv";
-		String pathAsk = path0+currency+"_5 Mins_Ask_2009.01.01_2020.01.17.csv";
+		String pathBid = path0+currency+"_5 Mins_Bid_2009.01.01_2020.02.04.csv";
+		String pathAsk = path0+currency+"_5 Mins_Ask_2009.01.01_2020.02.04.csv";
 		String pathNews = path0+"News.csv";
 		
 		
@@ -401,7 +401,7 @@ public class Bollinger extends AlgoBasic  {
 			//0-1 0.10 0.70 0.60
 			sp = new StratPerformance();
 			for (int h1=0;h1<=0;h1++){
-				int h2 = h1+8;
+				int h2 = h1+1;
 				for (int nbars=54;nbars<=54;nbars+=5){
 					for (double dt=0.16;dt<=0.16;dt+=0.01){
 						for (double sl=0.6;sl<=0.6;sl+=0.10){	
@@ -423,10 +423,10 @@ public class Bollinger extends AlgoBasic  {
 											int totalY = 0;
 											ArrayList<Double> maxDDs = new ArrayList<Double>();
 											ArrayList<Integer> tradess = new ArrayList<Integer>();
-											for (int y1=2009;y1<=2019;y1++){
+											for (int y1=2009;y1<=2020;y1++){
 												int y2 = y1+0;
-												for (int m1=0;m1<=8;m1+=2){
-													int m2 = m1+3;
+												for (int m1=0;m1<=0;m1+=0){
+													int m2 = m1+11;
 													mm = new Bollinger();
 													
 													sp.reset();
