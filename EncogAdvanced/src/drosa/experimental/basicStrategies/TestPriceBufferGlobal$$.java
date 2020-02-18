@@ -519,6 +519,7 @@ public class TestPriceBufferGlobal$$ {
 			double balance,
 			int hmax,
 			int maxLostPositionPips,
+			int maxDiff,
 			boolean debug,
 			boolean printSummary,
 			int returnMode,
@@ -746,7 +747,8 @@ public class TestPriceBufferGlobal$$ {
 						
 						//System.out.println(miniLots);
 												
-						if (maxMin>=thr								
+						if (maxMin>=thr		
+								//&& high-qb.getOpen5()>=maxDiff
 								){
 							
 							int transactionCosts = TradingUtils.getTransactionCosts(spreads,y, h,3);
@@ -786,7 +788,8 @@ public class TestPriceBufferGlobal$$ {
 							double leverage = (totalMicroLots+miniLots)*1000.0/actualEquitity;
 							
 							if (leverage<30.0) positions.add(pos);
-						}else if (maxMin<=-thr								
+						}else if (maxMin<=-thr									
+								//&& qa.getOpen5()-low>=maxDiff
 								){
 							int transactionCosts = TradingUtils.getTransactionCosts(spreads,y, h,3);
 							//transactionCosts = 0;
@@ -1194,8 +1197,8 @@ public class TestPriceBufferGlobal$$ {
 				
 				StrategyConfig config = new StrategyConfig();config.setParams(0,111,169,90,120,12,7, true);configs.set(0, config);//12
 				StrategyConfig config1 = new StrategyConfig();config1.setParams(1,168,103,100,125,12,7, true);configs.set(1, config1);//12
-				StrategyConfig config2 = new StrategyConfig();config2.setParams(2, 216,15,50,180,6,4, true);configs.set(2, config2);//6
-				StrategyConfig config3 = new StrategyConfig();config3.setParams(3, 125,20,40,190,1,2, true);configs.set(3, config3);//450
+				StrategyConfig config2 = new StrategyConfig();config2.setParams(2, 220,20,50,216,6,4, true);configs.set(2, config2);//6
+				StrategyConfig config3 = new StrategyConfig();config3.setParams(3, 125,20,40,190,1,2, true);configs.set(3, config3);
 				StrategyConfig config4 = new StrategyConfig();config4.setParams(4, 825,10,50,90,1,1, true);configs.set(4, config4);
 				StrategyConfig config5 = new StrategyConfig();config5.setParams(5, 450,15,25,86,1,5, true);configs.set(5, config5);
 				StrategyConfig config6 = new StrategyConfig();config6.setParams(6, 249,10,65,37,1,6, true);configs.set(6, config6);
@@ -1314,152 +1317,135 @@ public class TestPriceBufferGlobal$$ {
 				}
 				
 					
-					for (int h=0;h<=0;h++){
-						/*System.out.println("**testeando H="+h);
+					for (int h=3;h<=3;h++){
+						System.out.println("**testeando H="+h);
 						for (int h0=0;h0<=23;h0++){						
 							if (configs.get(h0)!=null){
 								configs.get(h0).copy(defaultConfigs.get(h0));
 								if (h0!=h) configs.get(h0).setEnabled(false);
 							}
-						}*/
+						}
 						//if (h>=0 && configs.get(h)!=null)
 							//configs.get(h).setEnabled(false);
-						for (int tp=70;tp<=70;tp+=5){
-							for (int sl=20;sl<=20;sl+=5){
+						for (int tp=19;tp<=19;tp+=1){
+							for (int sl=36;sl<=36;sl+=1){
 						//for (double tpf=0.1;tpf<=0.1;tpf+=0.10){
-							for (double risk=0.0;risk<=2.0;risk+=0.10){
-								for (int maxBars=384;maxBars<=384;maxBars+=12){
+							for (double risk=0.3;risk<=0.3;risk+=0.10){
+								for (int maxBars=168;maxBars<=168;maxBars+=12){
 									for (int barsBack=1;barsBack<=1;barsBack++){
-										for (int thr=2000;thr<=2000;thr+=100){		
+										for (int thr=180;thr<=180;thr+=12){		
 											for (int maxH=0; maxH<=0;maxH+=1){
 												for (int lostPips=8000; lostPips<=8000;lostPips+=100){
 													if (configs.get(h)!=null){
 														configs.get(h).setEnabled(true);
 														
-														//configs.get(h).setThr(thr);	
+														configs.get(h).setThr(thr);	
 														////configs.get(h).setBarsBack(barsBack);
-														//configs.get(h).setMaxBars(maxBars);
+														configs.get(h).setMaxBars(maxBars);
 														//configs.get(h).setTpf(tpf);
 														//configs.get(h).setSlf(slf);
 														//configs.get(h).setTp(tp);
-														//configs.get(h).setSl(sl);
+														configs.get(h).setSl(sl);
 														//configs.get(h).setRisk(risk);
 													}
 												
 													StratPerformance sp = new StratPerformance();
 													for (int maxTrades=25;maxTrades<=25;maxTrades+=5){//17 7 2.25
 														//para testear un riesgo major
-														double maxRisk =0.4;
-														for (double grisk =0.4;grisk<=maxRisk;grisk+=0.10){
-															for (int h0=0;h0<=23;h0++){						
-																/*if (configs.get(h0)!=null){
-																	configs.get(h0).copy(defaultConfigs.get(h0));
-																	configs.get(h0).setRisk(grisk);
-																}*/
-															}
-														//for (double risk = 1.0;risk<=1.0;risk+=0.01){
-														//for (double risk=6.5;risk<=6.5;risk+=0.25){
-															for (double comm=0;comm<=0;comm+=0.1){
-																
-																String header = maxTrades+" "+PrintUtils.Print2dec(risk,false)+" || "+configs.get(h).toString();
-																
-																int totalPositives = 0;
-																int total2016 = 0;
-																double accProfit = 0;
-																double balance = 4000;
-																double accYear = 0;
-																int totalY = 0;
-																ArrayList<Double> maxDDs = new ArrayList<Double>();
-																														
-																for (int dayWeek1=Calendar.MONDAY+0;dayWeek1<=Calendar.MONDAY+0;dayWeek1++){
-																	int dayWeek2 = dayWeek1+4;
-																	for (int sc=0;sc<=0;sc++){
-																		for (int hf=24;hf<=24;hf++){
-																			for (double aStd=0.0;aStd<=0.0;aStd+=1.0){
-																				for (int y1=2015;y1<=2015;y1+=1){
-																					int y2 = y1+5;
-																					for (int m1=0;m1<=0;m1+=1){
-																						int m2 = m1+11;
-																						String header1 = y1+" "+y2+" "+m1+" "+m2+" "+maxTrades
-																								+" "+PrintUtils.Print2dec(risk, false)
-																								+" | "+thr
-																								+" "+PrintUtils.Print2dec(tp, false)
-																								+' '+PrintUtils.Print2dec(sl, false)
-																								+' '+maxBars+' '+barsBack+" "+maxH+" "+lostPips
-																								;
-																						sp.reset();
-																						sp.setActualBalance( balance);																			
-																						double pf = TestPriceBufferGlobal$$.doTestF(header1,dataBid,dataAsk,maxMins,spreads,
-																								y1,y2,m1,m2,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																								true,aStd,balance,
-																								//risk,
-																								maxH,lostPips,false,
-																								true,0,dayTotalPips,true,true,
-																								sp);
-																						/*double pf = TestPriceBufferGlobal$$.doTest(header1,dataNoise,maxMins,
-																								y1,y2,m1,m2,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																								false,aStd,balance,risk,comm,
-																								false,true,0,dayTotalPips,
-																								sp);*/
-																						maxDDs.add(sp.getMaxDD());
-																						if (pf>=1.00) totalPositives++;
-																						if (y1>=2016 && pf>=1.0) total2016++;
-																						//if (newBalance>=balance) totalPositives++;
-																						//double per = newBalance*100.0/balance-100.0;
-																						totalY++;
-																						//accYear +=per;
-																						//accProfit += newBalance-balance;
-																						
-																						//doAnalyzeDays(dayTotalPips);
-																						//System.out.println(pf);
+														double maxRisk =0.1;
+														for (double grisk =0.1;grisk<=maxRisk;grisk+=0.10){
+															for (int maxDiff=800;maxDiff<=800;maxDiff+=50){
+																for (double comm=0;comm<=0;comm+=0.1){																	
+																	String header = maxTrades+" "+PrintUtils.Print2dec(risk,false)+" || "+configs.get(h).toString();																	
+																	int totalPositives = 0;
+																	int total2016 = 0;
+																	double accProfit = 0;
+																	double balance = 4000;
+																	double accYear = 0;
+																	int totalY = 0;
+																	ArrayList<Double> maxDDs = new ArrayList<Double>();
+																															
+																	for (int dayWeek1=Calendar.MONDAY+0;dayWeek1<=Calendar.MONDAY+0;dayWeek1++){
+																		int dayWeek2 = dayWeek1+4;
+																		for (int sc=0;sc<=0;sc++){
+																			for (int hf=24;hf<=24;hf++){
+																				for (double aStd=0.0;aStd<=0.0;aStd+=1.0){
+																					for (int y1=2009;y1<=2020;y1+=1){
+																						int y2 = y1+0;
+																						for (int m1=0;m1<=0;m1+=1){
+																							int m2 = m1+11;
+																							String header1 = y1+" "+y2+" "+m1+" "+m2+" "+maxTrades
+																									+" "+PrintUtils.Print2dec(risk, false)
+																									+" | "+thr
+																									+" "+PrintUtils.Print2dec(tp, false)
+																									+' '+PrintUtils.Print2dec(sl, false)
+																									+' '+maxBars+' '+barsBack+" "+maxH+" "+lostPips
+																									;
+																							sp.reset();
+																							sp.setActualBalance( balance);	
+																							double pf = TestPriceBufferGlobal$$.doTestF(header1,dataBid,dataAsk,maxMins,spreads,
+																									y1,y2,m1,m2,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
+																									true,aStd,balance,
+																									//risk,
+																									maxH,lostPips,
+																									maxDiff,
+																									false,
+																									false,0,dayTotalPips,																									
+																									true,true,
+																									sp);
+																							maxDDs.add(sp.getMaxDD());
+																							if (pf>=1.00) totalPositives++;
+																							if (y1>=2016 && pf>=1.0) total2016++;
+																							totalY++;
+																						}
 																					}
 																				}
-																			}
-																			if (totalPositives>=10 || total2016>=10){
-																				//double res0 = TestPriceBufferGlobal$$.doTest("",dataNoise,maxMins,2003,2008,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																						//false,0,balance,risk,comm,false,false,0,dayTotalPips);
-																				double res1 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2004,2009,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																						false,0,balance,maxH,lostPips,false,false,0,dayTotalPips,true,true,sp);														
-																				double res2 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2010,2012,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																						false,0,balance,maxH,lostPips,false,false,0,dayTotalPips,true,true,sp);
-																				double res3 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2013,2016,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																						false,0,balance,maxH,lostPips,false,false,0,dayTotalPips,true,true,sp);
-																				double res4 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2012,2015,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																						false,0,balance,maxH,lostPips,false,false,0,dayTotalPips,true,true,sp);
-																				double res5 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2016,2019,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																						false,0,balance,maxH,lostPips,false,false,0,dayTotalPips,true,true,sp);
-																																						
-																				double avg = (res1+res2+res3+res4)/4;
-																				double avgMaxDD = MathUtils.average(maxDDs);
-																				double dt1 = Math.sqrt(MathUtils.variance(maxDDs));
-																				double var95 = avg+dt1*dt1;
-																				
-																				if (avg>=0.0){
-																					System.out.println("RESULTS: "+header
-																							+" ||| "+totalPositives+" "+total2016
-																						//+" "+PrintUtils.Print2dec(accProfit, false)
-																						//+" "+PrintUtils.Print2dec(accProfit/balance, false)
-																						//+" "+PrintUtils.Print2dec(accYear/totalY, false)
-																						+" || "
-																						//+" "+PrintUtils.Print3dec(res0, false)
-																						+" "+PrintUtils.Print3dec(res1,  false)
-																						+" "+PrintUtils.Print3dec(res2,  false)
-																						+" "+PrintUtils.Print3dec(res3,  false)
-																						+" "+PrintUtils.Print3dec(res4,  false)
-																						+" "+PrintUtils.Print3dec(res5,  false)
-																						+" || "
-																						+" "+PrintUtils.Print3dec(avg,  false)
-																						+" || "+PrintUtils.Print3dec(avgMaxDD,  false)
-																						+" "+PrintUtils.Print3dec(var95,  false)
-																						);	
-																				}																			
-																			}
-																		}//hf
-																	}//sc
-																}//dayWeek1
-															}
-														}//lostpIPS
-													}//maxH
+																				if (totalPositives>=0 || total2016>=0){
+																					double res1 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2004,2006,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
+																							false,0,balance,maxH,lostPips,maxDiff,false,false,0,dayTotalPips,true,true,sp);														
+																					double res2 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2007,2009,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
+																							false,0,balance,maxH,lostPips,maxDiff,false,false,0,dayTotalPips,true,true,sp);
+																					double res3 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2010,2012,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
+																							false,0,balance,maxH,lostPips,maxDiff,false,false,0,dayTotalPips,true,true,sp);
+																					double res4 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2013,2015,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
+																							false,0,balance,maxH,lostPips,maxDiff,false,false,0,dayTotalPips,true,true,sp);
+																					double res5 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2016,2020,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
+																							false,0,balance,maxH,lostPips,maxDiff,false,false,0,dayTotalPips,true,true,sp);
+																																							
+																					double avg = (res1+res2+res3+res4)/4;
+																					double avgMaxDD = MathUtils.average(maxDDs);
+																					double dt1 = Math.sqrt(MathUtils.variance(maxDDs));
+																					double var95 = avg+dt1*dt1;
+																					
+																					double score = res5*0.50+res4*0.40+res3*0.30+res2*0.20+res1*0.10;
+																					
+																					if (avg>=0.0 && score>=0.0){
+																						System.out.println("RESULTS: "+header
+																								+" ||| "+totalPositives+" "+total2016
+																							//+" "+PrintUtils.Print2dec(accProfit, false)
+																							//+" "+PrintUtils.Print2dec(accProfit/balance, false)
+																							//+" "+PrintUtils.Print2dec(accYear/totalY, false)
+																							+" || "
+																							//+" "+PrintUtils.Print3dec(res0, false)
+																							+" "+PrintUtils.Print3dec(res1,  false)
+																							+" "+PrintUtils.Print3dec(res2,  false)
+																							+" "+PrintUtils.Print3dec(res3,  false)
+																							+" "+PrintUtils.Print3dec(res4,  false)
+																							+" "+PrintUtils.Print3dec(res5,  false)
+																							+" || "
+																							+" "+PrintUtils.Print3dec(score,  false)
+																							+" || "+PrintUtils.Print3dec(avgMaxDD,  false)
+																							+" "+PrintUtils.Print3dec(var95,  false)
+																							);	
+																					}																			
+																				}
+																			}//hf
+																		}//sc
+																	}//dayWeek1
+																}//comm
+															}//lostpIPS
+														}//maxH
+													}//maxDiff
 												}//grisk
 											}//maxtrades
 										}//thr
