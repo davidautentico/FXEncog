@@ -506,8 +506,7 @@ public class TestPriceBufferGlobal$$ {
 			ArrayList<QuoteShort> dataAsk,
 			ArrayList<Integer> maxMins,
 			HashMap<Integer,ArrayList<Double>> spreads,
-			int y1,int y2,
-			int m1,int m2,
+			Calendar calFrom,Calendar calTo,
 			int dayWeek1,int dayWeek2,
 			ArrayList<StrategyConfig> configs,
 			int hf,
@@ -564,13 +563,6 @@ public class TestPriceBufferGlobal$$ {
 		int totalRiskedPips = 0;
 		Calendar cal = Calendar.getInstance();
 		Calendar calqm = Calendar.getInstance();
-		
-		Calendar calFrom = Calendar.getInstance();
-		Calendar calTo = Calendar.getInstance();
-		calFrom.set(y1,m1, 1);
-		calTo.set(y2,m2, 1);
-		int maxTo = Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH);
-		calTo.set(y2,m2,maxTo);
 		
 		QuoteShort qm = new QuoteShort();
 		double ma0 = -1;
@@ -700,6 +692,10 @@ public class TestPriceBufferGlobal$$ {
 					int begin = i-config.getBarsBack();
 					//begin = i-1;//debug
 					int end = i-1;
+					
+					//configuracion especial para probar 1 por 1
+					//end = i-config.getBarsBack();
+					
 					int index = TestPriceBuffer.getMinMaxBuff(maxMins,begin,end,thr);
 					double risk = config.getRisk();
 					
@@ -1083,10 +1079,10 @@ public class TestPriceBufferGlobal$$ {
 		double actualBalance30 = actualBalance/(maxDD/30.0); //balance con max 30%
 		double yield  = (winPips-lostPips)*0.1*100/totalRiskedPips;		
 		
-		int totalAños = y2-y1+1;		
+		//int totalAños = y2-y1+1;		
 		
-		double tae = 100.0*(Math.pow(actualBalance/(balanceInicial), 1.0/totalAños)-1);
-		double taeFactor = tae/maxDD;
+		//double tae = 100.0*(Math.pow(actualBalance/(balanceInicial), 1.0/totalAños)-1);
+		//double taeFactor = tae/maxDD;
 		
 		double avgWin = winPips*0.1/wins;
 		double avgLoss = lostPips*0.1/losses;
@@ -1119,7 +1115,7 @@ public class TestPriceBufferGlobal$$ {
 					+" || MaxDD="+PrintUtils.Print2dec(maxDD, false)
 					//+" || VAR95= "+PrintUtils.Print2dec(var95, false)
 					+" || Factor="+PrintUtils.Print2dec(perMaxWin/maxDD, false)
-					+" || "+PrintUtils.Print2dec(taeFactor, false)
+					//+" || "+PrintUtils.Print2dec(taeFactor, false)
 					+" || "+sp.maxDDStats(20)
 					+" || "+sp.maxDDStats(40)
 					
@@ -1136,8 +1132,8 @@ public class TestPriceBufferGlobal$$ {
 		
 		String path0 ="C:\\fxdata\\";
 		String currency = "eurusd";
-		String pathBid = path0+currency+"_5 Mins_Bid_2004.01.01_2020.01.13.csv";
-		String pathAsk = path0+currency+"_5 Mins_Ask_2004.01.01_2020.01.13.csv";	
+		String pathBid = path0+currency+"_5 Mins_Bid_2004.01.01_2020.02.19.csv";
+		String pathAsk = path0+currency+"_5 Mins_Ask_2004.01.01_2020.02.19.csv";	
 		String pathSpread = path0+currency+"_spreads_2009_2019.csv";
 		
 		ArrayList<String> paths = new ArrayList<String>();
@@ -1146,12 +1142,18 @@ public class TestPriceBufferGlobal$$ {
 		
 		int total = 0;
 		ArrayList<Double> pfs = new ArrayList<Double>();
+		ArrayList<Double> pf2016s = new ArrayList<Double>();
 		int limit = paths.size()-1;
 		limit = 0;
 		String provider ="";
 		Sizeof.runGC ();
 		ArrayList<QuoteShort> dataI 		= null;
 		ArrayList<QuoteShort> dataS 		= null;
+		Calendar calFrom	= Calendar.getInstance();
+		Calendar calTo 		= Calendar.getInstance();
+		Calendar calMax 		= Calendar.getInstance();
+		//maxima fecha es febrero
+		calMax.set(2020,2,20);
 		for (int i = 0;i<=0;i++){		
 			ArrayList<QuoteShort> dataBid = null;
 			ArrayList<QuoteShort> dataAsk = null;
@@ -1182,22 +1184,10 @@ public class TestPriceBufferGlobal$$ {
 				//DMO SETTINGS
 				//2012-2016 TP SL NORMAL
 				
-				//EURUSD
-				/*StrategyConfig config = new StrategyConfig();config.setParams(0, 182,100,90,120,12, true);configs.set(0, config);//12
-				StrategyConfig config1 = new StrategyConfig();config1.setParams(1,200,120,100,125,12, true);configs.set(1, config1);//12
-				StrategyConfig config2 = new StrategyConfig();config2.setParams(2, 250,15,50,180,6, true);configs.set(2, config2);//6
-				StrategyConfig config3 = new StrategyConfig();config3.setParams(3, 191,20,40,195,1, true);configs.set(3, config3);//450
-				StrategyConfig config4 = new StrategyConfig();config4.setParams(4, 825,10,50,90,1, true);configs.set(4, config4);
-				StrategyConfig config5 = new StrategyConfig();config5.setParams(5, 450,10,40,86,1, true);configs.set(5, config5);
-				StrategyConfig config6 = new StrategyConfig();config6.setParams(6, 200,20,60,36,1, true);configs.set(6, config6);
-				StrategyConfig config7 = new StrategyConfig();config7.setParams(7, 202,25,74,44, 1, true);configs.set(7, config7);				
-				StrategyConfig config8 = new StrategyConfig();config8.setParams(8, 544,15,52,18,1, true);configs.set(8, config8);				
-			    StrategyConfig config9 = new StrategyConfig();config9.setParams(9, 524,32,38,20,1, true);configs.set(9, config9);
-				StrategyConfig config23 = new StrategyConfig();config23.setParams(23, 170,7,70,43,1, true);configs.set(23, config23);*/
-				
-				StrategyConfig config = new StrategyConfig();config.setParams(0,111,169,90,120,12,7, true);configs.set(0, config);//12
-				StrategyConfig config1 = new StrategyConfig();config1.setParams(1,168,103,100,125,12,7, true);configs.set(1, config1);//12
-				StrategyConfig config2 = new StrategyConfig();config2.setParams(2, 220,20,50,216,6,4, true);configs.set(2, config2);//6
+				//EURUSD				
+				/*StrategyConfig config = new StrategyConfig();config.setParams(0,111,169,90,120,1,7, true);configs.set(0, config);//12
+				StrategyConfig config1 = new StrategyConfig();config1.setParams(1,168,103,100,125,1,7, true);configs.set(1, config1);//12
+				StrategyConfig config2 = new StrategyConfig();config2.setParams(2, 220,20,50,216,1,4, true);configs.set(2, config2);//6
 				StrategyConfig config3 = new StrategyConfig();config3.setParams(3, 125,20,40,190,1,2, true);configs.set(3, config3);
 				StrategyConfig config4 = new StrategyConfig();config4.setParams(4, 825,10,50,90,1,1, true);configs.set(4, config4);
 				StrategyConfig config5 = new StrategyConfig();config5.setParams(5, 450,15,25,86,1,5, true);configs.set(5, config5);
@@ -1205,20 +1195,22 @@ public class TestPriceBufferGlobal$$ {
 				StrategyConfig config7 = new StrategyConfig();config7.setParams(7, 216,25,15,42,1,1, true);configs.set(7, config7);				
 				StrategyConfig config8 = new StrategyConfig();config8.setParams(8, 545,20,15,16,1,1, true);configs.set(8, config8);				
 			    StrategyConfig config9 = new StrategyConfig();config9.setParams(9, 434,25,35,17,1,1, true);configs.set(9, config9);
-				StrategyConfig config23 = new StrategyConfig();config23.setParams(23, 142,10,80,156,1,5, true);configs.set(23, config23);
-				
-				/*StrategyConfig config = new StrategyConfig();config.setParams(0,111,169,90,120,12,7, true);configs.set(0, config);//12
-				StrategyConfig config1 = new StrategyConfig();config1.setParams(1,168,103,100,125,12,4, true);configs.set(1, config1);//12
-				StrategyConfig config2 = new StrategyConfig();config2.setParams(2, 216,15,50,180,6,4, true);configs.set(2, config2);//6
-				StrategyConfig config3 = new StrategyConfig();config3.setParams(3, 125,20,40,190,1,2, true);configs.set(3, config3);//450
-				StrategyConfig config4 = new StrategyConfig();config4.setParams(4, 825,10,50,90,1,1, true);configs.set(4, config4);
-				StrategyConfig config5 = new StrategyConfig();config5.setParams(5, 450,15,25,86,1,7, true);configs.set(5, config5);
-				StrategyConfig config6 = new StrategyConfig();config6.setParams(6, 249,10,65,37,1,7, true);configs.set(6, config6);
-				StrategyConfig config7 = new StrategyConfig();config7.setParams(7, 216,25,15,42,1,2, true);configs.set(7, config7);				
-				StrategyConfig config8 = new StrategyConfig();config8.setParams(8, 545,20,15,16,1,1, true);configs.set(8, config8);				
-			    StrategyConfig config9 = new StrategyConfig();config9.setParams(9, 434,25,35,17,1,1, true);configs.set(9, config9);
 				StrategyConfig config23 = new StrategyConfig();config23.setParams(23, 142,10,80,156,1,5, true);configs.set(23, config23);*/
 				
+				
+				
+				StrategyConfig config = new StrategyConfig();config.setParams(0,122,50,85,36,12,7, true);configs.set(0, config);//12
+				StrategyConfig config1 = new StrategyConfig();config1.setParams(1,146,115,50,132,6,5, true);configs.set(1, config1);//12
+				StrategyConfig config2 = new StrategyConfig();config2.setParams(2,218,15,55,204,1,5, true);configs.set(2, config2);//6
+				StrategyConfig config3 = new StrategyConfig();config3.setParams(3,176,30,70,90,1,3, true);configs.set(3, config3);
+				StrategyConfig config4 = new StrategyConfig();config4.setParams(4,688,20,50,90,1,3, true);configs.set(4, config4);
+				StrategyConfig config5 = new StrategyConfig();config5.setParams(5,228,15,45,48,1,6, true);configs.set(5, config5);
+				StrategyConfig config6 = new StrategyConfig();config6.setParams(6,196,15,60,54,1,6, true);configs.set(6, config6);
+				StrategyConfig config7 = new StrategyConfig();config7.setParams(7,208,30,75,54,1,4, true);configs.set(7, config7);				
+				StrategyConfig config8 = new StrategyConfig();config8.setParams(8,500,35,55,15,1,1, true);configs.set(8, config8);				
+			    StrategyConfig config9 = new StrategyConfig();config9.setParams(9,504,20,37,20,1,1, true);configs.set(9, config9);
+				StrategyConfig config23 = new StrategyConfig();config23.setParams(23,160,12,50,42,1,3, true);configs.set(23, config23);
+								
 				StrategyConfig config10 = new StrategyConfig();config10.setParams(10, 2000,70,20,384,1,1, false);configs.set(10, config10);//12
 				StrategyConfig config11 = new StrategyConfig();config11.setParams(11, 225,55,8,204,1,false);configs.set(11, config11);//12
 				StrategyConfig config12 = new StrategyConfig();config12.setParams(12, 250,15,50,180,6,1,false);configs.set(12, config12);//6
@@ -1315,9 +1307,34 @@ public class TestPriceBufferGlobal$$ {
 						}
 					}
 				}
-				
 					
-					for (int h=3;h<=3;h++){
+				//barsback 
+				//0: 12
+				//1: 22 [2.3-1.5]
+				//2:  5 [1.91-1.52]
+				//3:  4 [1.50]
+				//4:  6
+				//5:  6 [llega a 1.66 en 5 a 1.84]
+				//6:  6 [llega a 1.85, hay que mirar mas atras]
+				//7:  4 [llega a 1.50]
+				//8:  1 [aunque en 6 llega a 1.30]
+				//9   1 [1.15]
+				
+				//0: 122  36  50  85
+				//1: 146 132 115 50
+				//2: 218 204  15  55
+				//3: 176  90  30  70
+				//4: 688  90  20  50
+				//5: 228  48  15  45
+				//6: 196  54  15  60
+				//7: 208  54  30  75
+				//8: 500  15  35  55
+				//9: 504  20  20  37
+				//23 134  35  50  95
+					
+				boolean printSummary = false;
+				int periodMult = 1;
+					for (int h=0;h<=9;h++){
 						System.out.println("**testeando H="+h);
 						for (int h0=0;h0<=23;h0++){						
 							if (configs.get(h0)!=null){
@@ -1327,25 +1344,24 @@ public class TestPriceBufferGlobal$$ {
 						}
 						//if (h>=0 && configs.get(h)!=null)
 							//configs.get(h).setEnabled(false);
-						for (int tp=19;tp<=19;tp+=1){
-							for (int sl=36;sl<=36;sl+=1){
-						//for (double tpf=0.1;tpf<=0.1;tpf+=0.10){
-							for (double risk=0.3;risk<=0.3;risk+=0.10){
-								for (int maxBars=168;maxBars<=168;maxBars+=12){
-									for (int barsBack=1;barsBack<=1;barsBack++){
-										for (int thr=180;thr<=180;thr+=12){		
+						for (int thr=160;thr<=160;thr+=6){	
+							for (int tp=5;tp<=5;tp+=1){
+								for (int sl=50;sl<=50;sl+=5){
+									for (double risk=0.1;risk<=0.1;risk+=0.1){
+										for (int maxBars=42;maxBars<=42;maxBars+=6){//35
+											for (int barsBack=6;barsBack<=6;barsBack++){											
 											for (int maxH=0; maxH<=0;maxH+=1){
 												for (int lostPips=8000; lostPips<=8000;lostPips+=100){
 													if (configs.get(h)!=null){
 														configs.get(h).setEnabled(true);
 														
-														configs.get(h).setThr(thr);	
-														////configs.get(h).setBarsBack(barsBack);
-														configs.get(h).setMaxBars(maxBars);
+														//configs.get(h).setThr(thr);	
+														//configs.get(h).setBarsBack(barsBack);
+														//configs.get(h).setMaxBars(maxBars);
 														//configs.get(h).setTpf(tpf);
 														//configs.get(h).setSlf(slf);
 														//configs.get(h).setTp(tp);
-														configs.get(h).setSl(sl);
+														//configs.get(h).setSl(sl);
 														//configs.get(h).setRisk(risk);
 													}
 												
@@ -1358,49 +1374,90 @@ public class TestPriceBufferGlobal$$ {
 																for (double comm=0;comm<=0;comm+=0.1){																	
 																	String header = maxTrades+" "+PrintUtils.Print2dec(risk,false)+" || "+configs.get(h).toString();																	
 																	int totalPositives = 0;
+																	int total2016b = 0;
 																	int total2016 = 0;
+																	int total2016Positives = 0;
 																	double accProfit = 0;
 																	double balance = 4000;
 																	double accYear = 0;
 																	int totalY = 0;
+																	int totalPeriods = 0;
 																	ArrayList<Double> maxDDs = new ArrayList<Double>();
+																	pfs.clear();
+																	pf2016s.clear();
 																															
 																	for (int dayWeek1=Calendar.MONDAY+0;dayWeek1<=Calendar.MONDAY+0;dayWeek1++){
 																		int dayWeek2 = dayWeek1+4;
 																		for (int sc=0;sc<=0;sc++){
 																			for (int hf=24;hf<=24;hf++){
-																				for (double aStd=0.0;aStd<=0.0;aStd+=1.0){
-																					for (int y1=2009;y1<=2020;y1+=1){
-																						int y2 = y1+0;
-																						for (int m1=0;m1<=0;m1+=1){
-																							int m2 = m1+11;
-																							String header1 = y1+" "+y2+" "+m1+" "+m2+" "+maxTrades
-																									+" "+PrintUtils.Print2dec(risk, false)
-																									+" | "+thr
-																									+" "+PrintUtils.Print2dec(tp, false)
-																									+' '+PrintUtils.Print2dec(sl, false)
-																									+' '+maxBars+' '+barsBack+" "+maxH+" "+lostPips
-																									;
-																							sp.reset();
-																							sp.setActualBalance( balance);	
-																							double pf = TestPriceBufferGlobal$$.doTestF(header1,dataBid,dataAsk,maxMins,spreads,
-																									y1,y2,m1,m2,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
-																									true,aStd,balance,
-																									//risk,
-																									maxH,lostPips,
-																									maxDiff,
-																									false,
-																									false,0,dayTotalPips,																									
-																									true,true,
-																									sp);
+																				for (double aStd=0.0;aStd<=0.0;aStd+=1.0){																					
+																					for (int periods=0;periods<=300;periods+=1) {
+																						calFrom.set(2004,01,01);
+																						calFrom.add(Calendar.MONTH, periods*periodMult);
+																						calTo.setTimeInMillis(calFrom.getTimeInMillis());
+																						calTo.add(Calendar.MONTH, 12);
+																						calTo.add(Calendar.DAY_OF_MONTH, -1);
+																						
+																						if (calTo.getTimeInMillis()>calMax.getTimeInMillis()) break;
+																						
+																						int y1 = calFrom.get(Calendar.YEAR);
+																						int y2 = calTo.get(Calendar.YEAR);
+																						int m1 = calFrom.get(Calendar.MONTH);
+																						int m2 = calTo.get(Calendar.MONTH);
+																						String header1 = y1+" "+y2+" "+m1+" "+m2+" "+maxTrades
+																								+" "+PrintUtils.Print2dec(risk, false)
+																								+" | "+thr
+																								+" "+tp
+																								+' '+sl
+																								+' '+maxBars+' '+barsBack+" "+maxH+" "+lostPips
+																								;
+																						sp.reset();
+																						sp.setActualBalance( balance);	
+																						double pf = TestPriceBufferGlobal$$.doTestF(header1,dataBid,dataAsk,maxMins,spreads,
+																								calFrom,calTo,
+																								dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
+																								true,aStd,balance,
+																								//risk,
+																								maxH,lostPips,
+																								maxDiff,
+																								false,
+																								printSummary,0,dayTotalPips,																									
+																								true,true,
+																								sp);
+																						
+																						if (sp.getTrades()>0) {
 																							maxDDs.add(sp.getMaxDD());
-																							if (pf>=1.00) totalPositives++;
-																							if (y1>=2016 && pf>=1.0) total2016++;
+																							if (pf>=3.0) pf = 3.0;//no tiene sentido agregar grandes																																														
+																							if (y1>=2016) { 
+																								total2016++;
+																								if (pf>=1.0) total2016Positives ++;
+																								pf2016s.add(pf);
+																							}else {
+																								total2016b++;
+																								if (pf>=1.00) totalPositives++;
+																								pfs.add(pf);
+																							}
 																							totalY++;
+																							totalPeriods++;
 																						}
 																					}
+																					double positivePer = totalPositives*100.0/total2016b;
+																					double positive2016Per = total2016Positives*100.0/total2016;
+																					double avgMaxDD	= MathUtils.average(maxDDs);
+																					double avgPf	= MathUtils.average(pfs);
+																					double avg2016Pf	= MathUtils.average(pf2016s);
+																					System.out.println(
+																							thr
+																							+" "+tp
+																							+" "+sl
+																							+" "+maxBars
+																							+" || "+maxDDs.size()
+																							+" || "+PrintUtils.Print3dec(positivePer,false)+" "+PrintUtils.Print3dec(positive2016Per,false)
+																							+" || "+PrintUtils.Print3dec(avgPf,false)+" "+PrintUtils.Print3dec(avg2016Pf,false)
+																							+" || "+PrintUtils.Print3dec(avgMaxDD,false)
+																						);
 																				}
-																				if (totalPositives>=0 || total2016>=0){
+																				/*if (totalPositives>=0 || total2016>=0){
 																					double res1 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2004,2006,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
 																							false,0,balance,maxH,lostPips,maxDiff,false,false,0,dayTotalPips,true,true,sp);														
 																					double res2 = TestPriceBufferGlobal$$.doTestF("",dataBid,dataAsk,maxMins,spreads,2007,2009,0,11,dayWeek1,dayWeek2,configs,hf,maxTrades,-1,sc,
@@ -1438,7 +1495,7 @@ public class TestPriceBufferGlobal$$ {
 																							+" "+PrintUtils.Print3dec(var95,  false)
 																							);	
 																					}																			
-																				}
+																				}*/
 																			}//hf
 																		}//sc
 																	}//dayWeek1
